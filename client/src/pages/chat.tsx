@@ -19,6 +19,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversation, setConversation] = useState<Conversation | null>(null);
+  const webSocketRef = useRef<{ socket: WebSocket; sendMessage: (content: string) => void } | null>(null);
   const { toast } = useToast();
 
   // Create initial conversation if none exists
@@ -67,11 +68,11 @@ export default function ChatPage() {
   useEffect(() => {
     if (!conversation) return;
 
-    const { socket, sendMessage } = createWebSocket(conversation.id, (newMessages) => {
+    const ws = createWebSocket(conversation.id, (newMessages) => {
       setMessages(prev => [...prev, ...newMessages]);
     });
 
-    socket.onerror = () => {
+    ws.socket.onerror = () => {
       toast({
         title: "Connection error",
         description: "Lost connection to chat server. Please refresh the page.",
@@ -79,8 +80,13 @@ export default function ChatPage() {
       });
     };
 
+    webSocketRef.current = ws;
+
     return () => {
-      socket.close();
+      if (webSocketRef.current) {
+        webSocketRef.current.socket.close();
+        webSocketRef.current = null;
+      }
     };
   }, [conversation]);
 
@@ -116,10 +122,9 @@ export default function ChatPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!conversation || !draftMessage.trim()) return;
+    if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
-    const { sendMessage } = createWebSocket(conversation.id, () => {});
-    sendMessage(draftMessage);
+    webSocketRef.current.sendMessage(draftMessage);
     setDraftMessage("");
     setCoachFeedback("");
   };
