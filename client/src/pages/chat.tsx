@@ -52,7 +52,7 @@ export default function ChatPage() {
   // Load existing messages when conversation is created
   const { data: existingMessages } = useQuery({
     queryKey: ["/api/conversations", conversation?.id, "messages"],
-    enabled: !!conversation?.id,
+    enabled: !!conversation?.id
   });
 
   useEffect(() => {

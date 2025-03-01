@@ -31,7 +31,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
-      .orderBy(desc(messages.timestamp));
+      .orderBy(messages.timestamp); 
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {

@@ -87,9 +87,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/conversations/:id/messages", async (req, res) => {
-    const id = parseInt(req.params.id);
-    const messages = await storage.getMessages(id);
-    res.json(messages);
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+
+      const messages = await storage.getMessages(id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
   });
 
   app.post("/api/analyze", async (req, res) => {
