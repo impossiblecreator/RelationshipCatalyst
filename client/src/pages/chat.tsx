@@ -35,6 +35,8 @@ export default function ChatPage() {
     },
     onSuccess: (newConversation) => {
       setConversation(newConversation);
+      // Store conversation ID in localStorage
+      localStorage.setItem('currentConversationId', newConversation.id.toString());
       toast({
         title: "Chat started",
         description: "You can now start chatting with your AI companion",
@@ -49,6 +51,27 @@ export default function ChatPage() {
     }
   });
 
+  // Load existing conversation on mount
+  useEffect(() => {
+    const savedConversationId = localStorage.getItem('currentConversationId');
+    if (savedConversationId) {
+      const id = parseInt(savedConversationId);
+      // Fetch the conversation details
+      fetch(`/api/conversations/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          setConversation(data);
+        })
+        .catch(() => {
+          // If conversation doesn't exist anymore, remove from storage and create new
+          localStorage.removeItem('currentConversationId');
+          createConversation.mutate();
+        });
+    } else {
+      createConversation.mutate();
+    }
+  }, []);
+
   // Load existing messages when conversation is created
   const { data: existingMessages, isLoading: isLoadingMessages } = useQuery<Message[]>({
     queryKey: [`/api/conversations/${conversation?.id}/messages`],
@@ -61,13 +84,6 @@ export default function ChatPage() {
       setMessages(existingMessages);
     }
   }, [existingMessages]);
-
-  // Create conversation on mount if none exists
-  useEffect(() => {
-    if (!conversation) {
-      createConversation.mutate();
-    }
-  }, []);
 
   // Setup WebSocket connection
   useEffect(() => {

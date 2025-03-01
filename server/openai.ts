@@ -5,7 +5,7 @@ export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "" 
 });
 
-const ASSISTANT_ID = "asst_kMT65BHMDYqhoIJlxSuloyHA";
+const ASSISTANT_ID = "asst_JI6J0tGM00w6BOy4UgyOLZUP";
 
 export async function generateCompanionResponse(userMessage: string): Promise<string> {
   try {
