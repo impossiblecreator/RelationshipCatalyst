@@ -5,7 +5,7 @@ export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "" 
 });
 
-const ASSISTANT_ID = "asst_JI6J0tGM00w6BOy4UgyOLZUP";
+const ASSISTANT_ID = "asst_kMT65BHMDYqhoIJlxSuloyHA";
 
 export async function generateCompanionResponse(userMessage: string): Promise<string> {
   try {
@@ -179,15 +179,11 @@ Return analysis in JSON format with:
           role: "user",
           content: JSON.stringify(messages)
         }
-      ]
+      ],
+      response_format: { type: "json_object" }
     });
 
-    const result = response.choices[0].message.content;
-    return result ? JSON.parse(result) : {
-      analysis: "Unable to analyze conversation dynamics at this time",
-      recommendedTopics: ["Continue the current topic"],
-      connectionLevel: "building"
-    };
+    return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error analyzing conversation dynamics:", error);
     return {

@@ -62,9 +62,11 @@ export default function ChatPage() {
     }
   }, [existingMessages]);
 
-  // Create conversation on mount
+  // Create conversation on mount if none exists
   useEffect(() => {
-    createConversation.mutate();
+    if (!conversation) {
+      createConversation.mutate();
+    }
   }, []);
 
   // Setup WebSocket connection
