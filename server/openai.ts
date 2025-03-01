@@ -59,21 +59,22 @@ export async function analyzeMessageDraft(
     // Create a thread for analysis
     const thread = await openai.beta.threads.create();
 
-    // Tag the message based on its type
+    // Tag the message and explicitly request JSON response
     const taggedMessage = `{${type === "companion" ? "Companion" : type === "user-draft" ? "User-Draft" : "User-Sent"}} ${message}`;
 
     // Add the message to analyze
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Analyze this message: "${taggedMessage}"`
+      content: `Please analyze this message and respond with a JSON object: "${taggedMessage}"`
     });
 
-    // Run Aurora assistant
+    // Run Aurora assistant with response format specified
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID
+      assistant_id: AURORA_ASSISTANT_ID,
+      additional_instructions: "Respond with a JSON object",
+      model: "gpt-4-0125-preview"  
     });
 
-    // Wait for completion
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     while (runStatus.status === "queued" || runStatus.status === "in_progress") {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -90,13 +91,17 @@ export async function analyzeMessageDraft(
 
     // Parse the JSON response from the text content
     const analysisText = auroraMessage.content[0].type === 'text' ? auroraMessage.content[0].text.value : "";
-    const analysis = JSON.parse(analysisText);
-
-    return {
-      feedback: analysis.feedback || "I need a moment to reflect on this interaction.",
-      suggestions: analysis.suggestions || ["Take a moment to consider the emotional undertones."],
-      connectionScore: analysis.connectionScore || 5
-    };
+    try {
+      const analysis = JSON.parse(analysisText);
+      return {
+        feedback: analysis.feedback || "I need a moment to reflect on this interaction.",
+        suggestions: analysis.suggestions || ["Take a moment to consider the emotional undertones."],
+        connectionScore: analysis.connectionScore || 5
+      };
+    } catch (parseError) {
+      console.error("Error parsing Aurora's response:", parseError);
+      throw new Error("Invalid response format from Aurora");
+    }
   } catch (error) {
     console.error("Error getting Aurora's analysis:", error);
     return {
@@ -119,11 +124,13 @@ export async function analyzeConversationDynamics(
 
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: JSON.stringify(messages)
+      content: `Please analyze these conversation messages and respond with a JSON object: ${JSON.stringify(messages)}`
     });
 
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID
+      assistant_id: AURORA_ASSISTANT_ID,
+      additional_instructions: "Respond with a JSON object",
+      model: "gpt-4-0125-preview"
     });
 
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
@@ -132,8 +139,8 @@ export async function analyzeConversationDynamics(
       runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
 
-    const messages = await openai.beta.threads.messages.list(thread.id);
-    const analysisMessage = messages.data.find(msg => msg.role === "assistant");
+    const responseMessages = await openai.beta.threads.messages.list(thread.id);
+    const analysisMessage = responseMessages.data.find(msg => msg.role === "assistant");
 
     if (!analysisMessage || !analysisMessage.content[0]) {
       throw new Error("No analysis received");
@@ -157,11 +164,13 @@ export async function generateCoachingTip(messageHistory: string[]): Promise<str
 
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: JSON.stringify(messageHistory)
+      content: `Please analyze these messages and respond with a JSON object containing coaching feedback: ${JSON.stringify(messageHistory)}`
     });
 
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID
+      assistant_id: AURORA_ASSISTANT_ID,
+      additional_instructions: "Respond with a JSON object",
+      model: "gpt-4-0125-preview"
     });
 
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
