@@ -264,7 +264,7 @@ export default function ChatPage() {
                       ? 'text-red-500'
                       : 'text-purple-500'
                 }`}>
-                  in peace, waiting for your next message
+                  accessing the greater consciousness
                 </p>
               )}
             </div>
