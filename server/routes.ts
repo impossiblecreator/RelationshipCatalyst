@@ -32,6 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (message.type === "message" && message.content) {
+          // 1. Store user message in database
           const validatedMessage = insertMessageSchema.parse({
             content: message.content,
             role: "user",
@@ -40,16 +41,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const savedMessage = await storage.createMessage(validatedMessage);
 
-          // Get AI companion response
+          // 2. Get AI companion response
           const aiResponseContent = await generateCompanionResponse(message.content);
 
+          // 3. Store AI response in database
           const companionMessage = await storage.createMessage({
             content: aiResponseContent,
             role: "companion",
             conversationId: message.conversationId
           });
 
-          // Broadcast to all connected clients for this conversation
+          // 4. Send both messages back to client
           wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN && clients.get(client) === message.conversationId) {
               client.send(JSON.stringify([savedMessage, companionMessage]));

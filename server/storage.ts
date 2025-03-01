@@ -1,4 +1,6 @@
-import { type Message, type InsertMessage, type Conversation, type InsertConversation } from "@shared/schema";
+import { messages, conversations, type Message, type InsertMessage, type Conversation, type InsertConversation } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   getConversation(id: number): Promise<Conversation | undefined>;
@@ -7,46 +9,38 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
 }
 
-export class MemStorage implements IStorage {
-  private conversations: Map<number, Conversation>;
-  private messages: Map<number, Message>;
-  private conversationId: number;
-  private messageId: number;
-
-  constructor() {
-    this.conversations = new Map();
-    this.messages = new Map();
-    this.conversationId = 1;
-    this.messageId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getConversation(id: number): Promise<Conversation | undefined> {
-    return this.conversations.get(id);
+    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+    return conversation;
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
-    const id = this.conversationId++;
-    const newConversation: Conversation = { ...conversation, id };
-    this.conversations.set(id, newConversation);
+    const [newConversation] = await db
+      .insert(conversations)
+      .values({ 
+        ...conversation,
+        isAiCompanion: conversation.isAiCompanion ?? true 
+      })
+      .returning();
     return newConversation;
   }
 
   async getMessages(conversationId: number): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(msg => msg.conversationId === conversationId)
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    return db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(desc(messages.timestamp));
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const id = this.messageId++;
-    const newMessage: Message = {
-      ...message,
-      id,
-      timestamp: new Date()
-    };
-    this.messages.set(id, newMessage);
+    const [newMessage] = await db
+      .insert(messages)
+      .values(message)
+      .returning();
     return newMessage;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
