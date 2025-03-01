@@ -70,20 +70,7 @@ export async function analyzeMessageDraft(
 
     // Run Aurora assistant
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID,
-      instructions: `As Aurora, analyze this message focusing on emotional depth and connection.
-Note the message type tag at the start ({Companion}, {User-Draft}, or {User-Sent}) and adjust your analysis accordingly.
-
-For {Companion} messages: Focus on how well the response builds connection.
-For {User-Draft} messages: Provide gentle guidance for deeper connection.
-For {User-Sent} messages: Analyze the emotional dynamics and connection quality.
-
-Provide insights in this format:
-{
-  "feedback": "Two sentences of insight about emotional connection",
-  "suggestions": ["One specific suggestion for deepening connection"],
-  "connectionScore": number from 1-10 indicating connection depth
-}`
+      assistant_id: AURORA_ASSISTANT_ID
     });
 
     // Wait for completion
@@ -136,14 +123,7 @@ export async function analyzeConversationDynamics(
     });
 
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID,
-      instructions: `As Aurora, analyze this conversation's emotional dynamics and connection patterns.
-Return analysis in this format:
-{
-  "analysis": "Key insight about emotional dynamics",
-  "recommendedTopics": ["Topics to explore for deeper connection"],
-  "connectionLevel": "surface" | "building" | "connected" | "deep"
-}`
+      assistant_id: AURORA_ASSISTANT_ID
     });
 
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
@@ -181,11 +161,7 @@ export async function generateCoachingTip(messageHistory: string[]): Promise<str
     });
 
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID,
-      instructions: `As Aurora, analyze how this conversation builds connection and attachment. 
-        Focus on therapeutic qualities and relationship-building aspects.
-        Provide a two-sentence response explaining the deeper meaning and attachment dynamics at play.
-        Format as: { "feedback": "your two sentences here" }`
+      assistant_id: AURORA_ASSISTANT_ID
     });
 
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
