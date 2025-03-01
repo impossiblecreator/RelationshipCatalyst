@@ -18,9 +18,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const clients = new Map<WebSocket, number>();
 
   wss.on("connection", (ws) => {
+    // Keep track of which conversation this websocket is for
+    let conversationId: number | null = null;
+
     ws.on("message", async (data) => {
       try {
         const message: WSMessage = JSON.parse(data.toString());
+
+        // Store the conversationId for this connection
+        if (!conversationId) {
+          conversationId = message.conversationId;
+          clients.set(ws, conversationId);
+        }
 
         if (message.type === "message" && message.content) {
           const validatedMessage = insertMessageSchema.parse({
@@ -49,12 +58,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (error) {
         console.error("WebSocket message error:", error);
-        ws.send(JSON.stringify({ error: "Failed to process message" }));
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ error: "Failed to process message" }));
+        }
       }
+    });
+
+    ws.on("close", () => {
+      clients.delete(ws);
     });
 
     ws.on("error", (error) => {
       console.error("WebSocket error:", error);
+      clients.delete(ws);
     });
   });
 
