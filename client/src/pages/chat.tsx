@@ -229,35 +229,91 @@ export default function ChatPage() {
 
       {/* Aurora's Insights */}
       {showAurora && (auroraFeedback.feedback || isAnalyzing) && (
-        <Card className="mx-4 mb-2 border-purple-200 bg-purple-50">
+        <Card className={`mx-4 mb-2 ${
+          auroraFeedback.connectionScore >= 7 
+            ? 'border-green-200 bg-green-50' 
+            : auroraFeedback.connectionScore <= 3 
+              ? 'border-red-200 bg-red-50'
+              : 'border-purple-200 bg-purple-50'
+        }`}>
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-500" />
-                <h3 className="text-sm font-semibold text-purple-700">
+                <Sparkles className={`w-4 h-4 ${
+                  auroraFeedback.connectionScore >= 7 
+                    ? 'text-green-500' 
+                    : auroraFeedback.connectionScore <= 3 
+                      ? 'text-red-500'
+                      : 'text-purple-500'
+                }`} />
+                <h3 className={`text-sm font-semibold ${
+                  auroraFeedback.connectionScore >= 7 
+                    ? 'text-green-700' 
+                    : auroraFeedback.connectionScore <= 3 
+                      ? 'text-red-700'
+                      : 'text-purple-700'
+                }`}>
                   Aurora's Insights
                 </h3>
               </div>
               {isAnalyzing && (
-                <p className="text-xs text-purple-500">Analyzing conversation...</p>
+                <p className={`text-xs ${
+                  auroraFeedback.connectionScore >= 7 
+                    ? 'text-green-500' 
+                    : auroraFeedback.connectionScore <= 3 
+                      ? 'text-red-500'
+                      : 'text-purple-500'
+                }`}>
+                  in peace, waiting for your next message
+                </p>
               )}
             </div>
             {auroraFeedback.feedback && (
               <>
-                <p className="text-sm text-purple-700 mb-2">{auroraFeedback.feedback}</p>
+                <p className={`text-sm ${
+                  auroraFeedback.connectionScore >= 7 
+                    ? 'text-green-700' 
+                    : auroraFeedback.connectionScore <= 3 
+                      ? 'text-red-700'
+                      : 'text-purple-700'
+                } mb-2`}>
+                  {auroraFeedback.feedback}
+                </p>
                 {auroraFeedback.suggestions.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-xs font-semibold text-purple-600">Suggestions:</p>
-                    <ul className="list-disc list-inside text-xs text-purple-600 mt-1">
+                    <p className={`text-xs font-semibold ${
+                      auroraFeedback.connectionScore >= 7 
+                        ? 'text-green-600' 
+                        : auroraFeedback.connectionScore <= 3 
+                          ? 'text-red-600'
+                          : 'text-purple-600'
+                    }`}>
+                      Suggestions:
+                    </p>
+                    <ul className="list-disc list-inside text-xs mt-1">
                       {auroraFeedback.suggestions.map((suggestion, index) => (
-                        <li key={index}>{suggestion}</li>
+                        <li key={index} className={
+                          auroraFeedback.connectionScore >= 7 
+                            ? 'text-green-600' 
+                            : auroraFeedback.connectionScore <= 3 
+                              ? 'text-red-600'
+                              : 'text-purple-600'
+                        }>
+                          {suggestion}
+                        </li>
                       ))}
                     </ul>
                   </div>
                 )}
                 {auroraFeedback.connectionScore > 0 && (
                   <div className="mt-2">
-                    <p className="text-xs text-purple-600">
+                    <p className={`text-xs ${
+                      auroraFeedback.connectionScore >= 7 
+                        ? 'text-green-600' 
+                        : auroraFeedback.connectionScore <= 3 
+                          ? 'text-red-600'
+                          : 'text-purple-600'
+                    }`}>
                       Connection Depth: {auroraFeedback.connectionScore}/10
                     </p>
                   </div>

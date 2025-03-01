@@ -71,8 +71,7 @@ export async function analyzeMessageDraft(
     // Run Aurora assistant with specified model
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: AURORA_ASSISTANT_ID,
-      model: "gpt-4-0125-preview"
-    });
+      });
 
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     while (runStatus.status === "queued" || runStatus.status === "in_progress") {
