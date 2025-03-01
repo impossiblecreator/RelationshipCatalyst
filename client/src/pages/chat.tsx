@@ -29,7 +29,8 @@ export default function ChatPage() {
         name: "AI Companion",
         isAiCompanion: true
       });
-      return response.json();
+      const data = await response.json();
+      return data;
     },
     onSuccess: (newConversation) => {
       setConversation(newConversation);
@@ -61,7 +62,9 @@ export default function ChatPage() {
 
   // Create conversation on mount
   useEffect(() => {
-    createConversation.mutate();
+    if (!conversation) {
+      createConversation.mutate();
+    }
   }, []);
 
   // Setup WebSocket connection
@@ -124,6 +127,16 @@ export default function ChatPage() {
     e.preventDefault();
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
+    // Add message to local state immediately for optimistic UI update
+    const userMessage = {
+      id: Date.now(), // Temporary ID
+      content: draftMessage,
+      role: "user",
+      conversationId: conversation.id,
+      timestamp: new Date()
+    } as Message;
+
+    setMessages(prev => [...prev, userMessage]);
     webSocketRef.current.sendMessage(draftMessage);
     setDraftMessage("");
     setCoachFeedback("");

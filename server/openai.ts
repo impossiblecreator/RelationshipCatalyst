@@ -17,12 +17,16 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
 - Sharing relevant experiences and perspectives
 - Expressing empathy and understanding
 - Being genuinely curious about the other person
-Keep responses concise but meaningful, around 2-3 sentences.`
+Keep responses concise but meaningful, around 2-3 sentences. Return response in JSON format with a 'response' field containing your message.`
         },
         { role: "user", content: userMessage }
       ],
       response_format: { type: "json_object" }
     });
+
+    if (!response.choices[0].message.content) {
+      throw new Error("Empty response from OpenAI");
+    }
 
     const parsedResponse = JSON.parse(response.choices[0].message.content);
     return parsedResponse.response;
@@ -57,6 +61,10 @@ Provide specific, actionable feedback in JSON format with:
       ],
       response_format: { type: "json_object" }
     });
+
+    if (!response.choices[0].message.content) {
+      throw new Error("Empty response from OpenAI");
+    }
 
     return JSON.parse(response.choices[0].message.content);
   } catch (error) {
