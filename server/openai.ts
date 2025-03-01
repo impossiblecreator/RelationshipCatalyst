@@ -58,22 +58,23 @@ export async function analyzeMessageDraft(draftMessage: string): Promise<{
     // Add the message to analyze
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Please analyze this message draft: "${draftMessage}". Provide feedback on how it could improve connection and communication.`
+      content: `Analyze this message like Dr. Gabor Mate would, focusing on how it relates to attachment, authenticity, and emotional connection: "${draftMessage}"`
     });
 
     // Run the assistant
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: ASSISTANT_ID,
-      instructions: `Analyze the message draft for:
-- Emotional intelligence and empathy
-- Clear communication
-- Potential for deepening connection
-- Areas for improvement
+      instructions: `Channel Dr. Gabor Mate's perspective on attachment and authentic connection. Analyze how this message reflects deeper emotional needs and connection-building attempts.
 
-Provide feedback in this JSON format:
+Focus on:
+- The emotional truth behind the words
+- How this builds authentic connection
+- The attachment needs being expressed or met
+
+Provide exactly 2 sentences of feedback in this format:
 {
-  "feedback": "constructive analysis",
-  "suggestions": ["1-2 specific suggestions"],
+  "feedback": "Your two-sentence insight about the emotional meaning/impact",
+  "suggestions": ["One specific suggestion for deepening connection"],
   "connectionScore": number from 1-10
 }`
     });

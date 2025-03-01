@@ -127,16 +127,7 @@ export default function ChatPage() {
     e.preventDefault();
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
-    // Add message to local state immediately for optimistic UI update
-    const userMessage = {
-      id: Date.now(), // Temporary ID
-      content: draftMessage,
-      role: "user",
-      conversationId: conversation.id,
-      timestamp: new Date()
-    } as Message;
-
-    setMessages(prev => [...prev, userMessage]);
+    // Send message through WebSocket and let the server response update the messages
     webSocketRef.current.sendMessage(draftMessage);
     setDraftMessage("");
     setCoachFeedback("");
@@ -161,7 +152,7 @@ export default function ChatPage() {
           onClick={() => setShowCoach(!showCoach)}
           className="flex items-center gap-1"
         >
-          AI Coach {showCoach ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          Aurora's Advice {showCoach ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </Button>
       </div>
 
