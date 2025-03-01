@@ -1,26 +1,27 @@
-"use client";
+"use client"
 
-import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Send, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { createWebSocket } from "@/lib/websocket";
-import { apiRequest } from "@/lib/queryClient";
-import type { Message, Conversation } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useRef, useEffect } from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { Send, ChevronDown, ChevronUp, MessageSquare } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent } from "@/components/ui/card"
+import { createWebSocket } from "@/lib/websocket"
+import { apiRequest } from "@/lib/queryClient"
+import type { Message, Conversation } from "@shared/schema"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ChatPage() {
-  const [draftMessage, setDraftMessage] = useState("");
-  const [showCoach, setShowCoach] = useState(true);
-  const [coachFeedback, setCoachFeedback] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [conversation, setConversation] = useState<Conversation | null>(null);
-  const webSocketRef = useRef<{ socket: WebSocket; sendMessage: (content: string) => void } | null>(null);
-  const { toast } = useToast();
+  const [draftMessage, setDraftMessage] = useState("")
+  const [showCoach, setShowCoach] = useState(true)
+  const [coachFeedback, setCoachFeedback] = useState("")
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [conversation, setConversation] = useState<Conversation | null>(null)
+  const webSocketRef = useRef<{ socket: WebSocket; sendMessage: (content: string) => void } | null>(null)
+  const { toast } = useToast()
 
   // Create initial conversation if none exists
   const createConversation = useMutation({
@@ -73,6 +74,7 @@ export default function ChatPage() {
 
     const ws = createWebSocket(conversation.id, (newMessages) => {
       setMessages(prev => [...prev, ...newMessages]);
+      setIsSending(false); // Reset sending state when we get response
     });
 
     ws.socket.onerror = () => {
@@ -93,30 +95,30 @@ export default function ChatPage() {
     };
   }, [conversation]);
 
-  // Get AI coach feedback on draft message
+  // Get AI coach feedback on messages
   useEffect(() => {
-    const debouncedAnalysis = setTimeout(async () => {
-      if (draftMessage.trim().length > 10) {
-        setIsAnalyzing(true);
-        try {
-          const response = await apiRequest("POST", "/api/analyze", {
-            message: draftMessage
-          });
-          const data = await response.json();
-          setCoachFeedback(data.feedback);
-        } catch (error) {
-          console.error("Error analyzing message:", error);
-          setCoachFeedback("Unable to analyze message at this time");
-        } finally {
-          setIsAnalyzing(false);
-        }
-      } else if (draftMessage.trim().length === 0) {
-        setCoachFeedback("");
+    const getMessageFeedback = async (content: string) => {
+      setIsAnalyzing(true);
+      try {
+        const response = await apiRequest("POST", "/api/analyze", {
+          message: content
+        });
+        const data = await response.json();
+        setCoachFeedback(data.feedback);
+      } catch (error) {
+        console.error("Error analyzing message:", error);
+        setCoachFeedback("I need a moment to gather my thoughts about this interaction.");
+      } finally {
+        setIsAnalyzing(false);
       }
-    }, 800);
+    };
 
-    return () => clearTimeout(debouncedAnalysis);
-  }, [draftMessage]);
+    // Get feedback for the latest message
+    const latestMessage = messages[messages.length - 1];
+    if (latestMessage && latestMessage.role === "companion") {
+      getMessageFeedback(latestMessage.content);
+    }
+  }, [messages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -127,7 +129,7 @@ export default function ChatPage() {
     e.preventDefault();
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
-    // Send message through WebSocket and let the server response update the messages
+    setIsSending(true);
     webSocketRef.current.sendMessage(draftMessage);
     setDraftMessage("");
     setCoachFeedback("");
@@ -174,6 +176,13 @@ export default function ChatPage() {
             </div>
           </div>
         ))}
+        {isSending && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gray-100 text-gray-500">
+              Companion is typing...
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -183,14 +192,14 @@ export default function ChatPage() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-purple-700">
-                AI Coach Feedback
+                Aurora's Advice
               </h3>
               {isAnalyzing && (
-                <p className="text-xs text-purple-500">Analyzing...</p>
+                <p className="text-xs text-purple-500">Analyzing interaction...</p>
               )}
             </div>
             <p className="text-xs text-purple-700 mt-1">
-              {coachFeedback || "I'll provide feedback as you type your message..."}
+              {coachFeedback || "I'll help you understand the deeper meaning of this interaction..."}
             </p>
           </CardContent>
         </Card>
@@ -206,8 +215,8 @@ export default function ChatPage() {
             className="min-h-[80px] resize-none"
           />
           <div className="flex justify-end">
-            <Button type="submit" className="rounded-full">
-              <Send size={18} className="mr-1" /> Send
+            <Button type="submit" className="rounded-full" disabled={isSending}>
+              <Send size={18} className="mr-1" /> {isSending ? "Sending..." : "Send"}
             </Button>
           </div>
         </form>

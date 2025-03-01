@@ -23,10 +23,10 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
       assistant_id: ASSISTANT_ID
     });
 
-    // Wait for the run to complete
+    // Wait for the run to complete with shorter polling interval
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     while (runStatus.status === "queued" || runStatus.status === "in_progress") {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1000ms to 500ms
       runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
 
@@ -79,10 +79,10 @@ Provide exactly 2 sentences of feedback in this format:
 }`
     });
 
-    // Wait for completion
+    // Wait for completion with shorter polling interval
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     while (runStatus.status === "queued" || runStatus.status === "in_progress") {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1000ms to 500ms
       runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
 
@@ -115,23 +115,37 @@ Provide exactly 2 sentences of feedback in this format:
 
 export async function generateCoachingTip(messageHistory: string[]): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a relationship coach observing a conversation. Based on the message history, provide a single specific tip to help deepen connection and understanding. Format response as JSON with a 'tip' field containing your advice.`
-        },
-        {
-          role: "user",
-          content: JSON.stringify(messageHistory)
-        }
-      ],
-      response_format: { type: "json_object" }
+    const thread = await openai.beta.threads.create();
+
+    await openai.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: JSON.stringify(messageHistory)
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
-    return result.tip;
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_ID,
+      instructions: `As Dr. Gabor Mate would, analyze how this conversation message builds connection and attachment. 
+        Focus on the therapeutic qualities and relationship-building aspects.
+        Provide a two-sentence response explaining the deeper meaning and attachment dynamics at play.
+        Format as: { "feedback": "your two sentences here" }`
+    });
+
+    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    while (runStatus.status === "queued" || runStatus.status === "in_progress") {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    }
+
+    const messages = await openai.beta.threads.messages.list(thread.id);
+    const assistantMessage = messages.data.find(msg => msg.role === "assistant");
+
+    if (!assistantMessage || !assistantMessage.content[0]) {
+      throw new Error("No coaching tip received");
+    }
+
+    const analysisText = assistantMessage.content[0].type === 'text' ? assistantMessage.content[0].text.value : "";
+    const analysis = JSON.parse(analysisText);
+    return analysis.feedback;
   } catch (error) {
     console.error("Error generating coaching tip:", error);
     return "Focus on asking open-ended questions to learn more about their perspective.";
