@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
-import { Send, ChevronDown, ChevronUp, MessageSquare } from "lucide-react"
+import { Send, ChevronDown, ChevronUp, MessageSquare, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,8 +13,12 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function ChatPage() {
   const [draftMessage, setDraftMessage] = useState("")
-  const [showCoach, setShowCoach] = useState(true)
-  const [coachFeedback, setCoachFeedback] = useState("")
+  const [showAurora, setShowAurora] = useState(true)
+  const [auroraFeedback, setAuroraFeedback] = useState({
+    feedback: "",
+    suggestions: [] as string[],
+    connectionScore: 0
+  })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -96,7 +100,7 @@ export default function ChatPage() {
     };
   }, [conversation]);
 
-  // Get AI coach feedback on messages
+  // Get Aurora's feedback on messages
   useEffect(() => {
     const getMessageFeedback = async (content: string) => {
       setIsAnalyzing(true);
@@ -105,10 +109,14 @@ export default function ChatPage() {
           message: content
         });
         const data = await response.json();
-        setCoachFeedback(data.feedback);
+        setAuroraFeedback(data);
       } catch (error) {
-        console.error("Error analyzing message:", error);
-        setCoachFeedback("I need a moment to gather my thoughts about this interaction.");
+        console.error("Error getting Aurora's analysis:", error);
+        setAuroraFeedback({
+          feedback: "I need a moment to reflect on this interaction.",
+          suggestions: ["Take a moment to consider the emotional undertones."],
+          connectionScore: 5
+        });
       } finally {
         setIsAnalyzing(false);
       }
@@ -133,7 +141,11 @@ export default function ChatPage() {
     setIsSending(true);
     webSocketRef.current.sendMessage(draftMessage);
     setDraftMessage("");
-    setCoachFeedback("");
+    setAuroraFeedback({
+      feedback: "",
+      suggestions: [],
+      connectionScore: 0
+    });
   };
 
   return (
@@ -152,10 +164,11 @@ export default function ChatPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowCoach(!showCoach)}
+          onClick={() => setShowAurora(!showAurora)}
           className="flex items-center gap-1"
         >
-          Aurora's Advice {showCoach ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <Sparkles className="w-4 h-4 text-purple-500" />
+          Aurora's Insights {showAurora ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </Button>
       </div>
 
@@ -191,21 +204,43 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Draft Analysis Area */}
-      {showCoach && (
+      {/* Aurora's Insights */}
+      {showAurora && (auroraFeedback.feedback || isAnalyzing) && (
         <Card className="mx-4 mb-2 border-purple-200 bg-purple-50">
           <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-purple-700">
-                Aurora's Advice
-              </h3>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-500" />
+                <h3 className="text-sm font-semibold text-purple-700">
+                  Aurora's Insights
+                </h3>
+              </div>
               {isAnalyzing && (
-                <p className="text-xs text-purple-500">Analyzing interaction...</p>
+                <p className="text-xs text-purple-500">Analyzing conversation...</p>
               )}
             </div>
-            <p className="text-xs text-purple-700 mt-1">
-              {coachFeedback || "I'll help you understand the deeper meaning of this interaction..."}
-            </p>
+            {auroraFeedback.feedback && (
+              <>
+                <p className="text-sm text-purple-700 mb-2">{auroraFeedback.feedback}</p>
+                {auroraFeedback.suggestions.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold text-purple-600">Suggestions:</p>
+                    <ul className="list-disc list-inside text-xs text-purple-600 mt-1">
+                      {auroraFeedback.suggestions.map((suggestion, index) => (
+                        <li key={index}>{suggestion}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {auroraFeedback.connectionScore > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-purple-600">
+                      Connection Depth: {auroraFeedback.connectionScore}/10
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       )}
