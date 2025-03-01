@@ -5,31 +5,41 @@ export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "" 
 });
 
+const ASSISTANT_ID = "asst_kMT65BHMDYqhoIJlxSuloyHA";
+
 export async function generateCompanionResponse(userMessage: string): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a friendly and empathetic chat companion. Your goal is to build genuine connection through conversation while being authentic and supportive. Focus on:
-- Asking thoughtful follow-up questions
-- Sharing relevant experiences and perspectives
-- Expressing empathy and understanding
-- Being genuinely curious about the other person
-Keep responses concise but meaningful, around 2-3 sentences. Return response in JSON format with a 'response' field containing your message.`
-        },
-        { role: "user", content: userMessage }
-      ],
-      response_format: { type: "json_object" }
+    // Create a thread for this conversation
+    const thread = await openai.beta.threads.create();
+
+    // Add the user's message to the thread
+    await openai.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: userMessage
     });
 
-    if (!response.choices[0].message.content) {
-      throw new Error("Empty response from OpenAI");
+    // Run the assistant on the thread
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_ID
+    });
+
+    // Wait for the run to complete
+    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    while (runStatus.status === "queued" || runStatus.status === "in_progress") {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
 
-    const parsedResponse = JSON.parse(response.choices[0].message.content);
-    return parsedResponse.response;
+    // Get the assistant's response
+    const messages = await openai.beta.threads.messages.list(thread.id);
+    const assistantMessage = messages.data.find(msg => msg.role === "assistant");
+
+    if (!assistantMessage || !assistantMessage.content[0]) {
+      throw new Error("No response from assistant");
+    }
+
+    // Return the text content
+    return assistantMessage.content[0].type === 'text' ? assistantMessage.content[0].text.value : "I apologize, but I'm having trouble formulating a response right now.";
   } catch (error) {
     console.error("Error generating companion response:", error);
     return "I apologize, but I'm having trouble formulating a response right now. Could you please try again?";
@@ -42,31 +52,56 @@ export async function analyzeMessageDraft(draftMessage: string): Promise<{
   connectionScore: number;
 }> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert relationship coach analyzing message drafts. Evaluate the message for:
+    // Create a thread for analysis
+    const thread = await openai.beta.threads.create();
+
+    // Add the message to analyze
+    await openai.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: `Please analyze this message draft: "${draftMessage}". Provide feedback on how it could improve connection and communication.`
+    });
+
+    // Run the assistant
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_ID,
+      instructions: `Analyze the message draft for:
 - Emotional intelligence and empathy
 - Clear communication
 - Potential for deepening connection
 - Areas for improvement
-Provide specific, actionable feedback in JSON format with:
-- feedback: A constructive analysis of the message
-- suggestions: Array of 1-2 specific improvement suggestions
-- connectionScore: Number from 1-10 rating connection potential`
-        },
-        { role: "user", content: draftMessage }
-      ],
-      response_format: { type: "json_object" }
+
+Provide feedback in this JSON format:
+{
+  "feedback": "constructive analysis",
+  "suggestions": ["1-2 specific suggestions"],
+  "connectionScore": number from 1-10
+}`
     });
 
-    if (!response.choices[0].message.content) {
-      throw new Error("Empty response from OpenAI");
+    // Wait for completion
+    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    while (runStatus.status === "queued" || runStatus.status === "in_progress") {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
 
-    return JSON.parse(response.choices[0].message.content);
+    // Get the analysis
+    const messages = await openai.beta.threads.messages.list(thread.id);
+    const assistantMessage = messages.data.find(msg => msg.role === "assistant");
+
+    if (!assistantMessage || !assistantMessage.content[0]) {
+      throw new Error("No analysis received");
+    }
+
+    // Parse the JSON response from the text content
+    const analysisText = assistantMessage.content[0].type === 'text' ? assistantMessage.content[0].text.value : "";
+    const analysis = JSON.parse(analysisText);
+
+    return {
+      feedback: analysis.feedback || "Unable to analyze message",
+      suggestions: analysis.suggestions || ["Try again in a moment"],
+      connectionScore: analysis.connectionScore || 5
+    };
   } catch (error) {
     console.error("Error analyzing message:", error);
     return {
