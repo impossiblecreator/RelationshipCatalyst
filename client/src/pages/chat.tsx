@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { Send, ChevronDown, ChevronUp, MessageSquare, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { createWebSocket } from "@/lib/websocket"
 import { apiRequest } from "@/lib/queryClient"
 import type { Message, Conversation } from "@shared/schema"
 import { useToast } from "@/hooks/use-toast"
+import debounce from "lodash/debounce"
 
 export default function ChatPage() {
   const [draftMessage, setDraftMessage] = useState("")
@@ -79,6 +80,15 @@ export default function ChatPage() {
 
     const ws = createWebSocket(conversation.id, (newMessages) => {
       setMessages(prev => [...prev, ...newMessages]);
+
+      // Analyze companion's response
+      if (newMessages.length > 0) {
+        const companionMessage = newMessages.find(msg => msg.role === "companion");
+        if (companionMessage) {
+          analyzeMessage(companionMessage.content, "companion");
+        }
+      }
+
       setIsSending(false);
     });
 
@@ -100,45 +110,58 @@ export default function ChatPage() {
     };
   }, [conversation]);
 
-  // Get Aurora's feedback on messages
-  useEffect(() => {
-    const getMessageFeedback = async (content: string) => {
-      setIsAnalyzing(true);
-      try {
-        const response = await apiRequest("POST", "/api/analyze", {
-          message: content
-        });
-        const data = await response.json();
-        setAuroraFeedback(data);
-      } catch (error) {
-        console.error("Error getting Aurora's analysis:", error);
-        setAuroraFeedback({
-          feedback: "I need a moment to reflect on this interaction.",
-          suggestions: ["Take a moment to consider the emotional undertones."],
-          connectionScore: 5
-        });
-      } finally {
-        setIsAnalyzing(false);
-      }
-    };
-
-    // Get feedback for the latest message
-    const latestMessage = messages[messages.length - 1];
-    if (latestMessage && latestMessage.role === "companion") {
-      getMessageFeedback(latestMessage.content);
+  // Function to analyze messages with Aurora
+  const analyzeMessage = async (content: string, type: "companion" | "user-draft" | "user-sent") => {
+    setIsAnalyzing(true);
+    try {
+      const response = await apiRequest("POST", "/api/analyze", {
+        message: content,
+        type: type
+      });
+      const data = await response.json();
+      setAuroraFeedback(data);
+    } catch (error) {
+      console.error("Error getting Aurora's analysis:", error);
+      setAuroraFeedback({
+        feedback: "I need a moment to reflect on this interaction.",
+        suggestions: ["Take a moment to consider the emotional undertones."],
+        connectionScore: 5
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
-  }, [messages]);
+  };
+
+  // Debounced function for analyzing draft messages
+  const debouncedAnalyzeDraft = useCallback(
+    debounce((content: string) => {
+      if (content.trim()) {
+        analyzeMessage(content, "user-draft");
+      }
+    }, 1000),
+    []
+  );
+
+  // Handle draft message changes
+  const handleDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const content = e.target.value;
+    setDraftMessage(content);
+    debouncedAnalyzeDraft(content);
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
     setIsSending(true);
+    // Analyze the sent message
+    await analyzeMessage(draftMessage, "user-sent");
+
     webSocketRef.current.sendMessage(draftMessage);
     setDraftMessage("");
     setAuroraFeedback({
@@ -250,7 +273,7 @@ export default function ChatPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <Textarea
             value={draftMessage}
-            onChange={(e) => setDraftMessage(e.target.value)}
+            onChange={handleDraftChange}
             placeholder="Type your message..."
             className="min-h-[80px] resize-none"
           />

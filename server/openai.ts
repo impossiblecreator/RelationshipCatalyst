@@ -47,7 +47,10 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
   }
 }
 
-export async function analyzeMessageDraft(draftMessage: string): Promise<{
+export async function analyzeMessageDraft(
+  message: string,
+  type: "companion" | "user-draft" | "user-sent"
+): Promise<{
   feedback: string;
   suggestions: string[];
   connectionScore: number;
@@ -56,16 +59,24 @@ export async function analyzeMessageDraft(draftMessage: string): Promise<{
     // Create a thread for analysis
     const thread = await openai.beta.threads.create();
 
+    // Tag the message based on its type
+    const taggedMessage = `{${type === "companion" ? "Companion" : type === "user-draft" ? "User-Draft" : "User-Sent"}} ${message}`;
+
     // Add the message to analyze
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Analyze this message: "${draftMessage}"`
+      content: `Analyze this message: "${taggedMessage}"`
     });
 
     // Run Aurora assistant
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: AURORA_ASSISTANT_ID,
       instructions: `As Aurora, analyze this message focusing on emotional depth and connection.
+Note the message type tag at the start ({Companion}, {User-Draft}, or {User-Sent}) and adjust your analysis accordingly.
+
+For {Companion} messages: Focus on how well the response builds connection.
+For {User-Draft} messages: Provide gentle guidance for deeper connection.
+For {User-Sent} messages: Analyze the emotional dynamics and connection quality.
 
 Provide insights in this format:
 {
