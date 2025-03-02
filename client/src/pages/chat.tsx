@@ -244,6 +244,7 @@ export default function ChatPage() {
       {/* Aurora's Insights */}
       {showAurora && (auroraFeedback.feedback || isAnalyzing) && (
         <Card className={`mx-4 mb-2 ${
+          !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
           auroraFeedback.connectionScore >= 7
             ? 'border-green-200 bg-green-50'
             : auroraFeedback.connectionScore <= 3
@@ -254,6 +255,7 @@ export default function ChatPage() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Sparkles className={`w-4 h-4 ${
+                  !auroraFeedback.connectionScore ? 'text-purple-500' :
                   auroraFeedback.connectionScore >= 7
                     ? 'text-green-500'
                     : auroraFeedback.connectionScore <= 3
@@ -261,6 +263,7 @@ export default function ChatPage() {
                       : 'text-purple-500'
                 }`} />
                 <h3 className={`text-sm font-semibold ${
+                  !auroraFeedback.connectionScore ? 'text-purple-700' :
                   auroraFeedback.connectionScore >= 7
                     ? 'text-green-700'
                     : auroraFeedback.connectionScore <= 3
@@ -271,13 +274,7 @@ export default function ChatPage() {
                 </h3>
               </div>
               {isAnalyzing && (
-                <p className={`text-xs ${
-                  auroraFeedback.connectionScore >= 7
-                    ? 'text-green-500'
-                    : auroraFeedback.connectionScore <= 3
-                      ? 'text-red-500'
-                      : 'text-purple-500'
-                }`}>
+                <p className="text-xs text-purple-500">
                   accessing the greater consciousness
                 </p>
               )}
@@ -285,6 +282,7 @@ export default function ChatPage() {
             {auroraFeedback.feedback && (
               <>
                 <p className={`text-sm ${
+                  !auroraFeedback.connectionScore ? 'text-purple-700' :
                   auroraFeedback.connectionScore >= 7
                     ? 'text-green-700'
                     : auroraFeedback.connectionScore <= 3
@@ -296,6 +294,7 @@ export default function ChatPage() {
                 {auroraFeedback.suggestions.length > 0 && (
                   <div className="mt-2">
                     <p className={`text-xs font-semibold ${
+                      !auroraFeedback.connectionScore ? 'text-purple-600' :
                       auroraFeedback.connectionScore >= 7
                         ? 'text-green-600'
                         : auroraFeedback.connectionScore <= 3
@@ -307,6 +306,7 @@ export default function ChatPage() {
                     <ul className="list-disc list-inside text-xs mt-1">
                       {auroraFeedback.suggestions.map((suggestion, index) => (
                         <li key={index} className={
+                          !auroraFeedback.connectionScore ? 'text-purple-600' :
                           auroraFeedback.connectionScore >= 7
                             ? 'text-green-600'
                             : auroraFeedback.connectionScore <= 3
@@ -322,6 +322,7 @@ export default function ChatPage() {
                 {auroraFeedback.connectionScore > 0 && (
                   <div className="mt-2">
                     <p className={`text-xs ${
+                      !auroraFeedback.connectionScore ? 'text-purple-600' :
                       auroraFeedback.connectionScore >= 7
                         ? 'text-green-600'
                         : auroraFeedback.connectionScore <= 3
