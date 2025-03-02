@@ -293,7 +293,7 @@ export default function ChatPage() {
                 </p>
                 {auroraFeedback.suggestions.length > 0 && (
                   <div className="mt-2">
-                    <p className={`text-xs font-semibold ${
+                    <p className={`text-xs ${
                       !auroraFeedback.connectionScore ? 'text-purple-600' :
                       auroraFeedback.connectionScore >= 7
                         ? 'text-green-600'
@@ -301,22 +301,9 @@ export default function ChatPage() {
                           ? 'text-red-600'
                           : 'text-purple-600'
                     }`}>
-                      Suggestions:
+                      <span className="font-semibold">Suggestion: </span>
+                      {auroraFeedback.suggestions[0]}
                     </p>
-                    <div className="text-xs mt-1">
-                      {auroraFeedback.suggestions.map((suggestion, index) => (
-                        <p key={index} className={
-                          !auroraFeedback.connectionScore ? 'text-purple-600' :
-                          auroraFeedback.connectionScore >= 7
-                            ? 'text-green-600'
-                            : auroraFeedback.connectionScore <= 3
-                              ? 'text-red-600'
-                              : 'text-purple-600'
-                        }>
-                          {suggestion}
-                        </p>
-                      ))}
-                    </div>
                   </div>
                 )}
               </>
