@@ -16,8 +16,8 @@ export default function ChatPage() {
   const [draftMessage, setDraftMessage] = useState("")
   const [showAurora, setShowAurora] = useState(true)
   const [auroraFeedback, setAuroraFeedback] = useState({
-    feedback: "",
-    suggestions: [] as string[],
+    feedback: "I'm here to help guide your conversation.",
+    suggestions: ["Share what's on your mind, and I'll provide insights to help deepen the connection."],
     connectionScore: 0
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -27,6 +27,14 @@ export default function ChatPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const webSocketRef = useRef<{ socket: WebSocket; sendMessage: (content: string) => void } | null>(null)
   const { toast } = useToast()
+
+  // Handle key press in textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
 
   // Create initial conversation if none exists
   const createConversation = useMutation({
@@ -318,6 +326,7 @@ export default function ChatPage() {
           <Textarea
             value={draftMessage}
             onChange={handleDraftChange}
+            onKeyDown={handleKeyDown}
             placeholder="Type your message..."
             className="min-h-[80px] resize-none"
           />
