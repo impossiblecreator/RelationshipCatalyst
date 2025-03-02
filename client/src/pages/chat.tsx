@@ -194,7 +194,7 @@ export default function ChatPage() {
             <MessageSquare size={20} />
           </div>
           <div>
-            <h1 className="font-semibold">Chat Companion</h1>
+            <h1 className="font-semibold">Prototype: Aurora's Insights In Fawn Chat</h1>
             <p className="text-xs text-gray-500">Online</p>
           </div>
         </div>
