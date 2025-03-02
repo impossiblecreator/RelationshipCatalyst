@@ -7,31 +7,60 @@ export const openai = new OpenAI({
 
 const COMPANION_ASSISTANT_ID = "asst_kMT65BHMDYqhoIJlxSuloyHA";
 const AURORA_ASSISTANT_ID = "asst_JI6J0tGM00w6BOy4UgyOLZUP";
+const MAX_RETRIES = 50; // 5 seconds total maximum wait time
+const POLLING_INTERVAL = 100; // 100ms between checks
+const TIMEOUT = 5000; // 5 second timeout
+
+// Helper function to wait for run completion with timeout
+async function waitForRunCompletion(threadId: string, runId: string): Promise<boolean> {
+  return new Promise(async (resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Operation timed out"));
+    }, TIMEOUT);
+
+    try {
+      let attempts = 0;
+      while (attempts < MAX_RETRIES) {
+        const runStatus = await openai.beta.threads.runs.retrieve(threadId, runId);
+
+        if (runStatus.status === "completed") {
+          clearTimeout(timeout);
+          resolve(true);
+          return;
+        }
+
+        if (runStatus.status === "failed" || runStatus.status === "cancelled" || runStatus.status === "expired") {
+          clearTimeout(timeout);
+          reject(new Error(`Run failed with status: ${runStatus.status}`));
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
+        attempts++;
+      }
+      clearTimeout(timeout);
+      reject(new Error("Max retries reached"));
+    } catch (error) {
+      clearTimeout(timeout);
+      reject(error);
+    }
+  });
+}
 
 export async function generateCompanionResponse(userMessage: string): Promise<string> {
   try {
-    // Create a thread for this conversation
     const thread = await openai.beta.threads.create();
-
-    // Add the user's message to the thread
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
       content: userMessage
     });
 
-    // Run the companion assistant on the thread
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: COMPANION_ASSISTANT_ID
     });
 
-    // Wait for the run to complete with shorter polling interval
-    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    while (runStatus.status === "queued" || runStatus.status === "in_progress") {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    }
+    await waitForRunCompletion(thread.id, run.id);
 
-    // Get the assistant's response
     const messages = await openai.beta.threads.messages.list(thread.id);
     const assistantMessage = messages.data.find(msg => msg.role === "assistant");
 
@@ -39,7 +68,6 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
       throw new Error("No response from companion");
     }
 
-    // Return the text content
     return assistantMessage.content[0].type === 'text' ? assistantMessage.content[0].text.value : "I apologize, but I'm having trouble formulating a response right now.";
   } catch (error) {
     console.error("Error generating companion response:", error);
@@ -56,30 +84,20 @@ export async function analyzeMessageDraft(
   connectionScore: number;
 }> {
   try {
-    // Create a thread for analysis
     const thread = await openai.beta.threads.create();
-
-    // Tag the message according to the specified format
     const taggedMessage = `{${type === "companion" ? "Companion" : type === "user-draft" ? "User-Draft" : "User-Sent"}} ${message}`;
 
-    // Add the message to analyze
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
       content: `Please analyze this message: "${taggedMessage}"`
     });
 
-    // Run Aurora assistant with specified model
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: AURORA_ASSISTANT_ID,
-      });
+    });
 
-    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    while (runStatus.status === "queued" || runStatus.status === "in_progress") {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    }
+    await waitForRunCompletion(thread.id, run.id);
 
-    // Get Aurora's analysis
     const messages = await openai.beta.threads.messages.list(thread.id);
     const auroraMessage = messages.data.find(msg => msg.role === "assistant");
 
@@ -87,7 +105,6 @@ export async function analyzeMessageDraft(
       throw new Error("No analysis received from Aurora");
     }
 
-    // Parse the JSON response from the text content
     const analysisText = auroraMessage.content[0].type === 'text' ? auroraMessage.content[0].text.value : "";
     try {
       const analysis = JSON.parse(analysisText);
@@ -98,11 +115,10 @@ export async function analyzeMessageDraft(
       };
     } catch (parseError) {
       console.error("Error parsing Aurora's response:", parseError);
-      // Return default values aligned with the scoring guidelines
       return {
         feedback: "I need a moment to reflect on this interaction.",
         suggestions: ["Consider the emotional undertones of your message", "Focus on expressing your authentic feelings"],
-        connectionScore: 5 // Neutral communication score as per guidelines
+        connectionScore: 5
       };
     }
   } catch (error) {
@@ -131,15 +147,10 @@ export async function analyzeConversationDynamics(
     });
 
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID,
-      model: "gpt-4-0125-preview"
+      assistant_id: AURORA_ASSISTANT_ID
     });
 
-    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    while (runStatus.status === "queued" || runStatus.status === "in_progress") {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    }
+    await waitForRunCompletion(thread.id, run.id);
 
     const responseMessages = await openai.beta.threads.messages.list(thread.id);
     const analysisMessage = responseMessages.data.find(msg => msg.role === "assistant");
@@ -170,15 +181,10 @@ export async function generateCoachingTip(messageHistory: string[]): Promise<str
     });
 
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID,
-      model: "gpt-4-0125-preview"
+      assistant_id: AURORA_ASSISTANT_ID
     });
 
-    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    while (runStatus.status === "queued" || runStatus.status === "in_progress") {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-    }
+    await waitForRunCompletion(thread.id, run.id);
 
     const messages = await openai.beta.threads.messages.list(thread.id);
     const assistantMessage = messages.data.find(msg => msg.role === "assistant");
