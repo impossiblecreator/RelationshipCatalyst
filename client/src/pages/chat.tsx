@@ -303,9 +303,9 @@ export default function ChatPage() {
                     }`}>
                       Suggestions:
                     </p>
-                    <ul className="list-disc list-inside text-xs mt-1">
+                    <div className="text-xs mt-1">
                       {auroraFeedback.suggestions.map((suggestion, index) => (
-                        <li key={index} className={
+                        <p key={index} className={
                           !auroraFeedback.connectionScore ? 'text-purple-600' :
                           auroraFeedback.connectionScore >= 7
                             ? 'text-green-600'
@@ -314,23 +314,9 @@ export default function ChatPage() {
                               : 'text-purple-600'
                         }>
                           {suggestion}
-                        </li>
+                        </p>
                       ))}
-                    </ul>
-                  </div>
-                )}
-                {auroraFeedback.connectionScore > 0 && (
-                  <div className="mt-2">
-                    <p className={`text-xs ${
-                      !auroraFeedback.connectionScore ? 'text-purple-600' :
-                      auroraFeedback.connectionScore >= 7
-                        ? 'text-green-600'
-                        : auroraFeedback.connectionScore <= 3
-                          ? 'text-red-600'
-                          : 'text-purple-600'
-                    }`}>
-                      Connection Depth: {auroraFeedback.connectionScore}/10
-                    </p>
+                    </div>
                   </div>
                 )}
               </>
