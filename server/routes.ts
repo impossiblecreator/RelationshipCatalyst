@@ -103,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { message, type } = req.body;
+      const { message, type, conversationHistory } = req.body;
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ error: "Message is required" });
       }
@@ -112,7 +112,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valid message type is required" });
       }
 
-      const analysis = await analyzeMessageDraft(message, type);
+      // Validate conversation history if provided
+      const history = Array.isArray(conversationHistory) ? conversationHistory : [];
+
+      const analysis = await analyzeMessageDraft(message, type, history);
       res.json(analysis);
     } catch (error) {
       console.error("Analysis error:", error);

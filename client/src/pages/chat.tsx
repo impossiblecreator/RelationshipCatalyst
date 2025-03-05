@@ -120,7 +120,11 @@ export default function ChatPage() {
     try {
       const response = await apiRequest("POST", "/api/analyze", {
         message: content,
-        type: type
+        type: type,
+        conversationHistory: messages.slice(-25).map(msg => ({
+          role: msg.role === "companion" ? "user's friend" : "user",
+          content: msg.content
+        }))
       });
       const data = await response.json();
       setAuroraFeedback(data);
@@ -162,11 +166,11 @@ export default function ChatPage() {
 
     setIsSending(true);
     const optimisticMessage: Message = {
-      id: Date.now(), 
+      id: Date.now(),
       content: draftMessage,
       role: "user",
       conversationId: conversation.id,
-      optimistic: true 
+      optimistic: true
     };
     setMessages(prev => [...prev, optimisticMessage]);
 

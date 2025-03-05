@@ -25,7 +25,14 @@ export const insertConversationSchema = createInsertSchema(conversations).omit({
   id: true 
 });
 
-export type Message = typeof messages.$inferSelect;
+// Base type from table
+type BaseMessage = typeof messages.$inferSelect;
+
+// Extended Message type that includes optional optimistic flag for frontend
+export type Message = BaseMessage & {
+  optimistic?: boolean;
+};
+
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;

@@ -84,23 +84,35 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
 // Update Aurora to use Groq API
 export async function analyzeMessageDraft(
   message: string,
-  type: "companion" | "user-draft" | "user-sent"
+  type: "companion" | "user-draft" | "user-sent",
+  conversationHistory: { role: string; content: string }[] = []
 ): Promise<{
   feedback: string;
   suggestions: string[];
   connectionScore: number;
 }> {
   try {
-    const prompt = `You are a mentor for kids aged 8 to 18. Provide specific, actionable coaching tips to help user build a relationship with the person they are chatting with. Instruct them to tell the truth, share how they feel and experience the world and seek to understand what it’s like to experience the world as the other person. Prompt them to ask thoughtful questions, reflect back feelings to confirm understanding, and be brave to share how they are truly feeling. Use language suitable for someone who is eight years old. Analyze this ${type} message for: "${message}"
+    // Format conversation history for context
+    const formattedHistory = conversationHistory
+      .slice(-25) // Get last 25 messages
+      .map(msg => `${msg.role === "user" ? "user" : "user's friend"}: ${msg.content}`)
+      .join("\n");
 
-    Provide feedback in the following JSON format. One sentence per section.:
-    {
-      "feedback": "A supportive observation about the message's emotional impact and communication style",
-      "suggestions": ["One or more specific suggestions for enhancing emotional connection"],
-      "connectionScore": A number from 1-10 indicating the message's potential for building connection
-    }
+    const prompt = `You are a mentor for kids aged 8 to 18. Analyze this conversation and provide specific, actionable coaching tips to help user build a relationship with the person they are chatting with. Instruct them to tell the truth, share how they feel and experience the world and seek to understand what it's like to experience the world as the other person. Prompt them to ask thoughtful questions, reflect back feelings to confirm understanding, and be brave to share how they are truly feeling. Use language suitable for someone who is eight years old.
 
-    Focus on empathy, clarity, and emotional awareness in your analysis.`;
+Recent conversation history:
+${formattedHistory}
+
+Current ${type} message to analyze: "${message}"
+
+Provide feedback in the following JSON format. One sentence per section:
+{
+  "feedback": "A supportive observation about the message's emotional impact and communication style considering the conversation context",
+  "suggestions": ["One or more specific suggestions for enhancing emotional connection based on the conversation flow"],
+  "connectionScore": A number from 1-10 indicating the message's potential for building connection
+}
+
+Focus on empathy, clarity, and emotional awareness in your analysis, taking into account the conversation history.`;
 
     const response = await groq.chat.completions.create({
       model: "llama3-8b-8192",
@@ -132,9 +144,9 @@ export async function analyzeMessageDraft(
   } catch (error) {
     console.error("Error getting Aurora's analysis:", error);
     return {
-      feedback: "I am having trouble reaching the greater conciousness.",
+      feedback: "I am having trouble reaching the greater consciousness.",
       suggestions: ["You have what you need to venture on your own"],
-      connectionScore: null 
+      connectionScore: 5
     };
   }
 }
