@@ -22,7 +22,7 @@ export default function ChatPage() {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false) // Start with small size
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
@@ -162,11 +162,11 @@ export default function ChatPage() {
 
     setIsSending(true);
     const optimisticMessage: Message = {
-      id: Date.now(), 
+      id: Date.now(),
       content: draftMessage,
       role: "user",
       conversationId: conversation.id,
-      optimistic: true 
+      optimistic: true
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
@@ -307,18 +307,18 @@ export default function ChatPage() {
 
       <div className="p-4 border-t bg-white">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'scale-y-100' : 'scale-y-20'}`}>
+          <div className="transition-all duration-300 ease-in-out h-[80px]">
             <Textarea
               value={draftMessage}
               onChange={handleDraftChange}
               onKeyDown={handleKeyDown}
               placeholder="Type your message..."
-              className={`min-h-[80px] resize-none transition-all duration-300 ease-in-out ${
-                isExpanded ? 'opacity-100' : 'opacity-70'
+              className={`resize-none transition-all duration-300 ease-in-out h-full ${
+                isExpanded ? 'h-[80px]' : 'h-[16px]'
               }`}
             />
           </div>
-          <div className={`flex justify-end transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`flex justify-end transition-opacity duration-300 ease-in-out ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
             <Button type="submit" className="rounded-full" disabled={isSending}>
               <Send size={18} className="mr-1" /> {isSending ? "Sending..." : "Send"}
             </Button>
