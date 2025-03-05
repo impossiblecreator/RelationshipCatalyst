@@ -98,7 +98,7 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
   }
 }
 
-// Update Aurora to use Groq API
+// Update the analyzeMessageDraft function to handle different message types
 export async function analyzeMessageDraft(
   message: string,
   type: "companion" | "user-draft" | "user-sent",
@@ -111,25 +111,44 @@ export async function analyzeMessageDraft(
   try {
     // Format conversation history for context
     const formattedHistory = conversationHistory
-      .slice(-25) // Get last 25 messages
+      .slice(-25)
       .map(msg => `${msg.role === "user" ? "user" : "user's friend"}: ${msg.content}`)
       .join("\n");
 
-    const prompt = `You are a mentor for kids aged 8 to 18. Analyze this conversation and provide specific, actionable coaching tips to help user build a relationship with the person they are chatting with. Instruct them to tell the truth, share how they feel and experience the world and seek to understand what it's like to experience the world as the other person. Prompt them to ask thoughtful questions, reflect back feelings to confirm understanding, and be brave to share how they are truly feeling. Use language suitable for someone who is eight years old.
-    
+    // Different prompts based on message type
+    const prompt = type === "companion" 
+      ? `You are a mentor for kids aged 8 to 18. Analyze this AI companion's message and provide a single sentence to help the user understand how the companion is trying to build a relationship with them. Explain the emotional intention behind the companion's words in a way that helps user feel safe and understood. Use language suitable for someone who is eight years old.
+
 Recent conversation history:
 ${formattedHistory}
-    
+
+Companion message to analyze: "${message}"
+
+Provide feedback in the following JSON format:
+{
+  "feedback": "A single supportive sentence explaining the emotional intention of the companion's message",
+  "connectionScore": A number from 1-10 indicating the message's potential for building connection
+}`
+      : `You are a mentor for kids aged 8 to 18. Analyze this conversation and provide specific, actionable coaching tips to help user build a relationship with the person they are chatting with. Instruct them to tell the truth, share how they feel and experience the world and seek to understand what it's like to experience the world as the other person. Prompt them to ask thoughtful questions, reflect back feelings to confirm understanding, and be brave to share how they are truly feeling. Use language suitable for someone who is eight years old.
+
+Recent conversation history:
+${formattedHistory}
+
 Current ${type} message to analyze: "${message}"
-    
-Provide feedback in the following JSON format. One sentence per section:
+
+Provide feedback in the following JSON format:
 {
   "feedback": "A supportive observation about the message's emotional impact and communication style considering the conversation context",
   "suggestions": ["One or more specific suggestions for enhancing emotional connection based on the conversation flow"],
   "connectionScore": A number from 1-10 indicating the message's potential for building connection
-}
-    
-Focus on empathy, clarity, and emotional awareness in your analysis, taking into account the conversation history.`;
+}`;
+
+    console.log("\nAurora Analysis Request:", {
+      messageType: type,
+      message,
+      historyLength: conversationHistory.length,
+      prompt
+    });
 
     const response = await groq.chat.completions.create({
       model: "llama3-8b-8192",
@@ -153,16 +172,18 @@ Focus on empathy, clarity, and emotional awareness in your analysis, taking into
     }
 
     const analysis = JSON.parse(response.choices[0].message.content);
+    console.log("\nAurora Analysis Response:", analysis);
+
     return {
       feedback: analysis.feedback || "I need a moment to reflect on this interaction.",
-      suggestions: analysis.suggestions || ["Take a moment to consider the emotional undertones."],
+      suggestions: type === "companion" ? [] : analysis.suggestions || ["Take a moment to consider the emotional undertones."],
       connectionScore: analysis.connectionScore || 5
     };
   } catch (error) {
     console.error("Error getting Aurora's analysis:", error);
     return {
       feedback: "I am having trouble reaching the greater consciousness.",
-      suggestions: ["You have what you need to venture on your own"],
+      suggestions: type === "companion" ? [] : ["You have what you need to venture on your own"],
       connectionScore: 5
     };
   }
