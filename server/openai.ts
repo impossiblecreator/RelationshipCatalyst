@@ -93,21 +93,21 @@ export async function analyzeMessageDraft(
   try {
     const prompt = `Analyze this ${type} message for emotional intelligence and communication effectiveness: "${message}"
 
-    Provide feedback in the following format:
+    Return your analysis as a JSON object with the following format:
     {
       "feedback": "A supportive observation about the message's emotional impact and communication style",
       "suggestions": ["One or more specific suggestions for enhancing emotional connection"],
       "connectionScore": A number from 1-10 indicating the message's potential for building connection
     }
 
-    Focus on empathy, clarity, and emotional awareness in your analysis.`;
+    Focus on empathy, clarity, and emotional awareness in your analysis. Ensure your response is valid JSON.`;
 
     const response = await groq.chat.completions.create({
       model: "llama3-8b-8192",
       messages: [
         {
           role: "system",
-          content: "You are Aurora, an empathetic AI relationship coach focused on analyzing and improving communication. You provide specific, actionable feedback to help people communicate more effectively and build stronger connections."
+          content: "You are Aurora, an empathetic AI relationship coach focused on analyzing and improving communication. You provide specific, actionable feedback to help people communicate more effectively and build stronger connections. Always return your analysis in JSON format."
         },
         {
           role: "user",
@@ -152,19 +152,21 @@ export async function analyzeConversationDynamics(
 
 ${conversationContext}
 
-Provide analysis in the following format:
+Return your analysis as a JSON object in the following format:
 {
   "analysis": "A comprehensive observation of the conversation dynamics",
   "recommendedTopics": ["Suggested topics to explore based on the conversation"],
   "connectionLevel": "One of: building, strengthening, deepening, or needs-attention"
-}`;
+}
+
+Ensure your response is valid JSON.`;
 
     const response = await groq.chat.completions.create({
       model: "llama3-8b-8192",
       messages: [
         {
           role: "system",
-          content: "You are Aurora, an empathetic AI relationship coach. Analyze conversations for emotional patterns, communication styles, and opportunities for deeper connection."
+          content: "You are Aurora, an empathetic AI relationship coach. Analyze conversations for emotional patterns, communication styles, and opportunities for deeper connection. Always return your analysis in JSON format."
         },
         {
           role: "user",
@@ -197,17 +199,19 @@ export async function generateCoachingTip(messageHistory: string[]): Promise<str
 
 ${messageHistory.join("\n")}
 
-Respond in the following format:
+Return your response as a JSON object in the following format:
 {
   "feedback": "A specific, actionable coaching tip focused on emotional intelligence and connection"
-}`;
+}
+
+Ensure your response is valid JSON.`;
 
     const response = await groq.chat.completions.create({
       model: "llama3-8b-8192",
       messages: [
         {
           role: "system",
-          content: "You are Aurora, an empathetic AI relationship coach. Provide specific, actionable coaching tips to help people communicate more effectively and build stronger connections."
+          content: "You are Aurora, an empathetic AI relationship coach. Provide specific, actionable coaching tips to help people communicate more effectively and build stronger connections. Always return your response in JSON format."
         },
         {
           role: "user",
