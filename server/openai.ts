@@ -115,7 +115,8 @@ export async function analyzeMessageDraft(
         }
       ],
       temperature: 0.7,
-      max_tokens: 500
+      max_tokens: 500,
+      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0]?.message?.content) {
@@ -171,7 +172,8 @@ Provide analysis in the following format:
         }
       ],
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 1000,
+      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0]?.message?.content) {
@@ -213,7 +215,8 @@ Respond in the following format:
         }
       ],
       temperature: 0.7,
-      max_tokens: 500
+      max_tokens: 500,
+      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0]?.message?.content) {
