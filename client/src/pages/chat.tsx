@@ -195,15 +195,15 @@ export default function ChatPage() {
   useEffect(() => {
     if (!auroraCardRef.current || !auroraFeedback.feedback) return;
 
-    // Create the floating/breathing animation
+    // Create the floating/breathing animation with enhanced parameters
     const animation = gsap.to(auroraCardRef.current, {
-      y: -10,          // Float upward by 10px
-      scale: 1.05,     // Subtle scale up for breathing effect
-      duration: 1.5,   // Each cycle takes 1.5 seconds
-      ease: "sine.inOut", // Smooth, organic motion
+      y: -8,           // Slightly reduced float height for smoother motion
+      scale: 1.02,     // Subtle scale for breathing effect
+      duration: 2,     // Slower duration for more graceful movement
+      ease: "power1.inOut", // Smoother easing function
       repeat: -1,      // Loop indefinitely 
       yoyo: true,      // Reverse animation for seamless loop
-      paused: true     // Start paused so we can control when it plays
+      immediateRender: true // Ensure animation starts immediately
     });
 
     // Play animation when feedback is present
@@ -276,7 +276,7 @@ export default function ChatPage() {
         <Card 
           ref={auroraCardRef}
           className={`mx-4 mb-2 transition-all duration-300 ease-in-out ${
-            !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] scale-y-20 overflow-hidden opacity-50' : 'h-auto scale-y-100 opacity-100'
+            !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] overflow-hidden' : 'h-auto'
           } ${
             !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
             auroraFeedback.connectionScore >= 7
