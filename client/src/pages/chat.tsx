@@ -193,7 +193,7 @@ export default function ChatPage() {
 
   // Add hover animation when Aurora card mounts or updates
   useEffect(() => {
-    if (!auroraCardRef.current || !auroraFeedback.feedback) return;
+    if (!auroraCardRef.current) return;
 
     // Create the floating/breathing animation with enhanced parameters
     const animation = gsap.to(auroraCardRef.current, {
@@ -206,9 +206,11 @@ export default function ChatPage() {
       immediateRender: true // Ensure animation starts immediately
     });
 
-    // Play animation when feedback is present
-    if (auroraFeedback.feedback) {
+    // Play animation only when there's no feedback
+    if (!auroraFeedback.feedback) {
       animation.play();
+    } else {
+      animation.pause();
     }
 
     // Cleanup on unmount or when feedback changes
