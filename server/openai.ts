@@ -1,19 +1,11 @@
 import OpenAI from "openai";
 
-// openAI API call 
-// export const openai = new OpenAI({ 
-//   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "", 
-//   });
-
 export const openai = new OpenAI({ 
   apiKey: process.env.GROQ_API_KEY || "", 
   baseURL: "https://api.groq.com/openai/v1"
-  });
-
-  
+});
 
 const COMPANION_ASSISTANT_ID = "asst_kMT65BHMDYqhoIJlxSuloyHA";
-const AURORA_ASSISTANT_ID = "asst_JI6J0tGM00w6BOy4UgyOLZUP";
 const MAX_RETRIES = 50; // 5 seconds total maximum wait time
 const POLLING_INTERVAL = 100; // 100ms between checks
 const TIMEOUT = 5000; // 5 second timeout
@@ -54,6 +46,7 @@ async function waitForRunCompletion(threadId: string, runId: string): Promise<bo
   });
 }
 
+// Keep Companion Assistant using Assistant API
 export async function generateCompanionResponse(userMessage: string): Promise<string> {
   try {
     const thread = await openai.beta.threads.create();
@@ -82,6 +75,7 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
   }
 }
 
+// Update Aurora to use chat completions API
 export async function analyzeMessageDraft(
   message: string,
   type: "companion" | "user-draft" | "user-sent"
@@ -91,43 +85,44 @@ export async function analyzeMessageDraft(
   connectionScore: number;
 }> {
   try {
-    const thread = await openai.beta.threads.create();
-    const taggedMessage = `{${type === "companion" ? "Companion" : type === "user-draft" ? "User-Draft" : "User-Sent"}} ${message}`;
+    const prompt = `Analyze this ${type} message for emotional intelligence and communication effectiveness: "${message}"
 
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: `Please analyze this message: "${taggedMessage}"`
+    Provide feedback in the following JSON format:
+    {
+      "feedback": "A supportive observation about the message's emotional impact and communication style",
+      "suggestions": ["One or more specific suggestions for enhancing emotional connection"],
+      "connectionScore": A number from 1-10 indicating the message's potential for building connection
+    }
+
+    Focus on empathy, clarity, and emotional awareness in your analysis.`;
+
+    const response = await openai.chat.completions.create({
+      model: "mixtral-8x7b-32768",
+      messages: [
+        {
+          role: "system",
+          content: "You are Aurora, an empathetic AI relationship coach focused on analyzing and improving communication. You provide specific, actionable feedback to help people communicate more effectively and build stronger connections."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+      response_format: { type: "json_object" }
     });
 
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID,
-    });
-
-    await waitForRunCompletion(thread.id, run.id);
-
-    const messages = await openai.beta.threads.messages.list(thread.id);
-    const auroraMessage = messages.data.find(msg => msg.role === "assistant");
-
-    if (!auroraMessage || !auroraMessage.content[0]) {
+    if (!response.choices[0]?.message?.content) {
       throw new Error("No analysis received from Aurora");
     }
 
-    const analysisText = auroraMessage.content[0].type === 'text' ? auroraMessage.content[0].text.value : "";
-    try {
-      const analysis = JSON.parse(analysisText);
-      return {
-        feedback: analysis.feedback || "I need a moment to reflect on this interaction.",
-        suggestions: analysis.suggestions || ["Take a moment to consider the emotional undertones."],
-        connectionScore: analysis.connectionScore || 5
-      };
-    } catch (parseError) {
-      console.error("Error parsing Aurora's response:", parseError);
-      return {
-        feedback: "I need a moment to reflect on this interaction.",
-        suggestions: ["Consider the emotional undertones of your message", "Focus on expressing your authentic feelings"],
-        connectionScore: 5
-      };
-    }
+    const analysis = JSON.parse(response.choices[0].message.content);
+    return {
+      feedback: analysis.feedback || "I need a moment to reflect on this interaction.",
+      suggestions: analysis.suggestions || ["Take a moment to consider the emotional undertones."],
+      connectionScore: analysis.connectionScore || 5
+    };
   } catch (error) {
     console.error("Error getting Aurora's analysis:", error);
     return {
@@ -146,28 +141,40 @@ export async function analyzeConversationDynamics(
   connectionLevel: string;
 }> {
   try {
-    const thread = await openai.beta.threads.create();
+    const conversationContext = messages.map(m => `${m.role}: ${m.content}`).join("\n");
+    const prompt = `Analyze this conversation for relationship dynamics and communication patterns:
 
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: `Please analyze these conversation messages: ${JSON.stringify(messages)}`
+${conversationContext}
+
+Provide analysis in the following JSON format:
+{
+  "analysis": "A comprehensive observation of the conversation dynamics",
+  "recommendedTopics": ["Suggested topics to explore based on the conversation"],
+  "connectionLevel": "One of: building, strengthening, deepening, or needs-attention"
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "mixtral-8x7b-32768",
+      messages: [
+        {
+          role: "system",
+          content: "You are Aurora, an empathetic AI relationship coach. Analyze conversations for emotional patterns, communication styles, and opportunities for deeper connection."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+      response_format: { type: "json_object" }
     });
 
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID
-    });
-
-    await waitForRunCompletion(thread.id, run.id);
-
-    const responseMessages = await openai.beta.threads.messages.list(thread.id);
-    const analysisMessage = responseMessages.data.find(msg => msg.role === "assistant");
-
-    if (!analysisMessage || !analysisMessage.content[0]) {
+    if (!response.choices[0]?.message?.content) {
       throw new Error("No analysis received");
     }
 
-    const analysisText = analysisMessage.content[0].type === 'text' ? analysisMessage.content[0].text.value : "";
-    return JSON.parse(analysisText);
+    return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error analyzing conversation dynamics:", error);
     return {
@@ -180,28 +187,37 @@ export async function analyzeConversationDynamics(
 
 export async function generateCoachingTip(messageHistory: string[]): Promise<string> {
   try {
-    const thread = await openai.beta.threads.create();
+    const prompt = `Based on these messages, provide a coaching tip for improving communication and connection:
 
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: `Please analyze these messages for coaching feedback: ${JSON.stringify(messageHistory)}`
+${messageHistory.join("\n")}
+
+Respond in JSON format:
+{
+  "feedback": "A specific, actionable coaching tip focused on emotional intelligence and connection"
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "mixtral-8x7b-32768",
+      messages: [
+        {
+          role: "system",
+          content: "You are Aurora, an empathetic AI relationship coach. Provide specific, actionable coaching tips to help people communicate more effectively and build stronger connections."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+      response_format: { type: "json_object" }
     });
 
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: AURORA_ASSISTANT_ID
-    });
-
-    await waitForRunCompletion(thread.id, run.id);
-
-    const messages = await openai.beta.threads.messages.list(thread.id);
-    const assistantMessage = messages.data.find(msg => msg.role === "assistant");
-
-    if (!assistantMessage || !assistantMessage.content[0]) {
+    if (!response.choices[0]?.message?.content) {
       throw new Error("No coaching tip received");
     }
 
-    const analysisText = assistantMessage.content[0].type === 'text' ? assistantMessage.content[0].text.value : "";
-    const analysis = JSON.parse(analysisText);
+    const analysis = JSON.parse(response.choices[0].message.content);
     return analysis.feedback;
   } catch (error) {
     console.error("Error generating coaching tip:", error);
