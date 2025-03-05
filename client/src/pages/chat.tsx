@@ -22,13 +22,13 @@ export default function ChatPage() {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const webSocketRef = useRef<{ socket: WebSocket; sendMessage: (content: string) => void } | null>(null)
   const { toast } = useToast()
 
-  // Handle key press in textarea
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -36,7 +36,6 @@ export default function ChatPage() {
     }
   };
 
-  // Create initial conversation if none exists
   const createConversation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/conversations", {
@@ -62,38 +61,32 @@ export default function ChatPage() {
     }
   });
 
-  // Load existing messages when conversation is created
   const { data: existingMessages, isLoading: isLoadingMessages } = useQuery<Message[]>({
     queryKey: [`/api/conversations/${conversation?.id}/messages`],
     enabled: !!conversation?.id
   });
 
-  // Update messages when they're loaded
   useEffect(() => {
     if (existingMessages) {
       setMessages(existingMessages);
     }
   }, [existingMessages]);
 
-  // Create conversation on mount if none exists
   useEffect(() => {
     if (!conversation) {
       createConversation.mutate();
     }
   }, []);
 
-  // Setup WebSocket connection
   useEffect(() => {
     if (!conversation) return;
 
     const ws = createWebSocket(conversation.id, (newMessages) => {
       setMessages(prev => {
-        // Remove the optimistic user message if it exists
         const withoutOptimistic = prev.filter(m => !m.optimistic);
         return [...withoutOptimistic, ...newMessages];
       });
 
-      // Analyze companion's response
       if (newMessages.length > 0) {
         const companionMessage = newMessages.find(msg => msg.role === "companion");
         if (companionMessage) {
@@ -122,7 +115,6 @@ export default function ChatPage() {
     };
   }, [conversation]);
 
-  // Function to analyze messages with Aurora
   const analyzeMessage = async (content: string, type: "companion" | "user-draft" | "user-sent") => {
     setIsAnalyzing(true);
     try {
@@ -144,7 +136,6 @@ export default function ChatPage() {
     }
   };
 
-  // Debounced function for analyzing draft messages
   const debouncedAnalyzeDraft = useCallback(
     debounce((content: string) => {
       if (content.trim()) {
@@ -154,14 +145,13 @@ export default function ChatPage() {
     []
   );
 
-  // Handle draft message changes
   const handleDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const content = e.target.value;
     setDraftMessage(content);
+    setIsExpanded(content.length > 0);
     debouncedAnalyzeDraft(content);
   };
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -171,17 +161,15 @@ export default function ChatPage() {
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
     setIsSending(true);
-    // Add optimistic message immediately
     const optimisticMessage: Message = {
-      id: Date.now(), // temporary ID
+      id: Date.now(), 
       content: draftMessage,
       role: "user",
       conversationId: conversation.id,
-      optimistic: true // flag to identify optimistic messages
+      optimistic: true 
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
-    // Analyze the sent message
     await analyzeMessage(draftMessage, "user-sent");
 
     webSocketRef.current.sendMessage(draftMessage);
@@ -195,7 +183,6 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen max-w-3xl mx-auto bg-gray-50 border-x border-gray-200">
-      {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
@@ -217,7 +204,6 @@ export default function ChatPage() {
         </Button>
       </div>
 
-      {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoadingMessages ? (
           <div className="text-center text-gray-500">Loading messages...</div>
@@ -249,7 +235,6 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Aurora's Insights */}
       {showAurora && (auroraFeedback.feedback || isAnalyzing) && (
         <Card className={`mx-4 mb-2 ${
           !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
@@ -320,17 +305,20 @@ export default function ChatPage() {
         </Card>
       )}
 
-      {/* Message Input Area */}
       <div className="p-4 border-t bg-white">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <Textarea
-            value={draftMessage}
-            onChange={handleDraftChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            className="min-h-[80px] resize-none"
-          />
-          <div className="flex justify-end">
+          <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'scale-y-100' : 'scale-y-20'}`}>
+            <Textarea
+              value={draftMessage}
+              onChange={handleDraftChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message..."
+              className={`min-h-[80px] resize-none transition-all duration-300 ease-in-out ${
+                isExpanded ? 'opacity-100' : 'opacity-70'
+              }`}
+            />
+          </div>
+          <div className={`flex justify-end transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
             <Button type="submit" className="rounded-full" disabled={isSending}>
               <Send size={18} className="mr-1" /> {isSending ? "Sending..." : "Send"}
             </Button>
