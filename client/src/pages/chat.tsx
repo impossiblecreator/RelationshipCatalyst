@@ -22,7 +22,6 @@ export default function ChatPage() {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false) // Start with small size
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
@@ -148,7 +147,6 @@ export default function ChatPage() {
   const handleDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const content = e.target.value;
     setDraftMessage(content);
-    setIsExpanded(content.length > 0);
     debouncedAnalyzeDraft(content);
   };
 
@@ -237,7 +235,7 @@ export default function ChatPage() {
 
       {showAurora && (
         <Card className={`mx-4 mb-2 transition-all duration-300 ease-in-out ${
-          !auroraFeedback.feedback ? 'h-[40px] overflow-hidden' : 'h-auto'
+          !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] overflow-hidden opacity-50' : 'h-auto opacity-100'
         } ${
           !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
           auroraFeedback.connectionScore >= 7
@@ -309,24 +307,23 @@ export default function ChatPage() {
 
       <div className="p-4 border-t bg-white">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <div className="transition-all duration-300 ease-in-out h-[80px]">
+          <div className="h-[80px]">
             <Textarea
               value={draftMessage}
               onChange={handleDraftChange}
               onKeyDown={handleKeyDown}
               placeholder="Type your message..."
-              className={`resize-none transition-all duration-300 ease-in-out h-full ${
-                isExpanded ? 'h-[80px]' : 'h-[16px]'
-              }`}
+              className="resize-none h-full"
             />
           </div>
-          <div className={`flex justify-end transition-opacity duration-300 ease-in-out ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="flex justify-end">
             <Button type="submit" className="rounded-full" disabled={isSending}>
               <Send size={18} className="mr-1" /> {isSending ? "Sending..." : "Send"}
             </Button>
           </div>
         </form>
       </div>
+
     </div>
   );
 }
