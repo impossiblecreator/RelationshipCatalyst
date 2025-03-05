@@ -1,7 +1,14 @@
 import OpenAI from "openai";
 
+// OpenAI client for Companion Assistant
 export const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || "" 
+});
+
+// Groq client for Aurora
+const groq = new OpenAI({ 
+  apiKey: process.env.GROQ_API_KEY || "", 
+  baseURL: "https://api.groq.com/openai/v1"
 });
 
 const COMPANION_ASSISTANT_ID = "asst_kMT65BHMDYqhoIJlxSuloyHA";
@@ -74,7 +81,7 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
   }
 }
 
-// Update Aurora to use chat completions API
+// Update Aurora to use Groq API
 export async function analyzeMessageDraft(
   message: string,
   type: "companion" | "user-draft" | "user-sent"
@@ -86,7 +93,7 @@ export async function analyzeMessageDraft(
   try {
     const prompt = `Analyze this ${type} message for emotional intelligence and communication effectiveness: "${message}"
 
-    Provide feedback in the following JSON format:
+    Provide feedback in the following format:
     {
       "feedback": "A supportive observation about the message's emotional impact and communication style",
       "suggestions": ["One or more specific suggestions for enhancing emotional connection"],
@@ -95,8 +102,8 @@ export async function analyzeMessageDraft(
 
     Focus on empathy, clarity, and emotional awareness in your analysis.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
+    const response = await groq.chat.completions.create({
+      model: "llama3-8b-8192",
       messages: [
         {
           role: "system",
@@ -108,8 +115,7 @@ export async function analyzeMessageDraft(
         }
       ],
       temperature: 0.7,
-      max_tokens: 500,
-      response_format: { type: "json_object" }
+      max_tokens: 500
     });
 
     if (!response.choices[0]?.message?.content) {
@@ -145,15 +151,15 @@ export async function analyzeConversationDynamics(
 
 ${conversationContext}
 
-Provide analysis in the following JSON format:
+Provide analysis in the following format:
 {
   "analysis": "A comprehensive observation of the conversation dynamics",
   "recommendedTopics": ["Suggested topics to explore based on the conversation"],
   "connectionLevel": "One of: building, strengthening, deepening, or needs-attention"
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
+    const response = await groq.chat.completions.create({
+      model: "llama3-8b-8192",
       messages: [
         {
           role: "system",
@@ -165,8 +171,7 @@ Provide analysis in the following JSON format:
         }
       ],
       temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: "json_object" }
+      max_tokens: 1000
     });
 
     if (!response.choices[0]?.message?.content) {
@@ -190,13 +195,13 @@ export async function generateCoachingTip(messageHistory: string[]): Promise<str
 
 ${messageHistory.join("\n")}
 
-Respond in JSON format:
+Respond in the following format:
 {
   "feedback": "A specific, actionable coaching tip focused on emotional intelligence and connection"
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
+    const response = await groq.chat.completions.create({
+      model: "llama3-8b-8192",
       messages: [
         {
           role: "system",
@@ -208,8 +213,7 @@ Respond in JSON format:
         }
       ],
       temperature: 0.7,
-      max_tokens: 500,
-      response_format: { type: "json_object" }
+      max_tokens: 500
     });
 
     if (!response.choices[0]?.message?.content) {
