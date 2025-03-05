@@ -235,8 +235,10 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {showAurora && (auroraFeedback.feedback || isAnalyzing) && (
-        <Card className={`mx-4 mb-2 ${
+      {showAurora && (
+        <Card className={`mx-4 mb-2 transition-all duration-300 ease-in-out ${
+          !auroraFeedback.feedback ? 'h-[40px] overflow-hidden' : 'h-auto'
+        } ${
           !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
           auroraFeedback.connectionScore >= 7
             ? 'border-green-200 bg-green-50'
