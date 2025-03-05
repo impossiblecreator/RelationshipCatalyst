@@ -58,13 +58,17 @@ async function waitForRunCompletion(threadId: string, runId: string): Promise<bo
   });
 }
 
-// Keep Companion Assistant using Assistant API
-export async function generateCompanionResponse(userMessage: string): Promise<string> {
+// Keep Companion Assistant using Assistant API with thread persistence
+export async function generateCompanionResponse(userMessage: string, conversationId: number, threadId?: string): Promise<{ content: string; threadId: string }> {
   try {
-    console.log("Creating new thread for companion response");
-    const thread = await openai.beta.threads.create();
+    console.log(`Processing message for conversation ${conversationId} with ${threadId ? 'existing' : 'new'} thread`);
 
-    console.log("Adding user message to thread");
+    // Create or reuse thread
+    const thread = threadId 
+      ? { id: threadId } 
+      : await openai.beta.threads.create();
+
+    console.log("Adding user message to thread:", thread.id);
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
       content: userMessage
@@ -86,15 +90,24 @@ export async function generateCompanionResponse(userMessage: string): Promise<st
       throw new Error("No response content from assistant");
     }
 
-    return assistantMessage.content[0].type === 'text' 
-      ? assistantMessage.content[0].text.value 
-      : "I apologize, but I received an unexpected response format. Could you please try again?";
+    return {
+      content: assistantMessage.content[0].type === 'text' 
+        ? assistantMessage.content[0].text.value 
+        : "I apologize, but I received an unexpected response format. Could you please try again?",
+      threadId: thread.id
+    };
   } catch (error) {
     console.error("Error generating companion response:", error);
     if (error instanceof Error) {
-      return `I apologize, but I'm having some trouble (${error.message}). Could you please try again in a moment?`;
+      return {
+        content: `I apologize, but I'm having some trouble (${error.message}). Could you please try again in a moment?`,
+        threadId: threadId || 'error'
+      };
     }
-    return "I apologize, but I'm having trouble formulating a response right now. Could you please try again in a moment?";
+    return {
+      content: "I apologize, but I'm having trouble formulating a response right now. Could you please try again in a moment?",
+      threadId: threadId || 'error'
+    };
   }
 }
 

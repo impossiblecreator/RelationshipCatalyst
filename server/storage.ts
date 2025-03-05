@@ -5,6 +5,7 @@ import { eq, desc } from "drizzle-orm";
 export interface IStorage {
   getConversation(id: number): Promise<Conversation | undefined>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
+  updateConversationThread(id: number, threadId: string): Promise<void>;
   getMessages(conversationId: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
 }
@@ -24,6 +25,13 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return newConversation;
+  }
+
+  async updateConversationThread(id: number, threadId: string): Promise<void> {
+    await db
+      .update(conversations)
+      .set({ threadId })
+      .where(eq(conversations.id, id));
   }
 
   async getMessages(conversationId: number): Promise<Message[]> {

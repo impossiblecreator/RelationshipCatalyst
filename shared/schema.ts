@@ -13,7 +13,8 @@ export const messages = pgTable("messages", {
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  isAiCompanion: boolean("is_ai_companion").default(true).notNull()
+  isAiCompanion: boolean("is_ai_companion").default(true).notNull(),
+  threadId: text("thread_id")
 });
 
 export const insertMessageSchema = createInsertSchema(messages).omit({ 
@@ -22,7 +23,8 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 });
 
 export const insertConversationSchema = createInsertSchema(conversations).omit({ 
-  id: true 
+  id: true,
+  threadId: true
 });
 
 // Base type from table

@@ -13,22 +13,31 @@ interface WSMessage {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+
+  // Create WebSocket server with explicit port
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: "/ws"
+  });
 
   const clients = new Map<WebSocket, number>();
 
   wss.on("connection", (ws) => {
+    console.log("New WebSocket connection established");
+
     // Keep track of which conversation this websocket is for
     let conversationId: number | null = null;
 
     ws.on("message", async (data) => {
       try {
         const message: WSMessage = JSON.parse(data.toString());
+        console.log("Received WebSocket message:", message);
 
         // Store the conversationId for this connection
         if (!conversationId) {
           conversationId = message.conversationId;
           clients.set(ws, conversationId);
+          console.log(`Associated client with conversation ${conversationId}`);
         }
 
         if (message.type === "message" && message.content) {
@@ -41,8 +50,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const savedMessage = await storage.createMessage(validatedMessage);
 
-          // 2. Get AI companion response
-          const aiResponseContent = await generateCompanionResponse(message.content);
+          // Get the conversation to access threadId
+          const conversation = await storage.getConversation(message.conversationId);
+          if (!conversation) {
+            throw new Error("Conversation not found");
+          }
+
+          // 2. Get AI companion response with thread context
+          const { content: aiResponseContent, threadId } = await generateCompanionResponse(
+            message.content,
+            message.conversationId,
+            conversation.threadId
+          );
+
+          // Update conversation with threadId if it's new
+          if (!conversation.threadId && threadId !== 'error') {
+            await storage.updateConversationThread(message.conversationId, threadId);
+          }
 
           // 3. Store AI response in database
           const companionMessage = await storage.createMessage({
@@ -67,6 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on("close", () => {
+      console.log("WebSocket connection closed");
       clients.delete(ws);
     });
 
