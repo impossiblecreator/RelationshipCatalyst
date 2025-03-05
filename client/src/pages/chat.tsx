@@ -22,6 +22,7 @@ export default function ChatPage() {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
@@ -147,18 +148,8 @@ export default function ChatPage() {
   const handleDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const content = e.target.value;
     setDraftMessage(content);
-
-    if (!content.trim()) {
-      // Clear Aurora's feedback when input is empty
-      setAuroraFeedback({
-        feedback: "",
-        suggestions: [],
-        connectionScore: 0
-      });
-      setIsAnalyzing(false);
-    } else {
-      debouncedAnalyzeDraft(content);
-    }
+    setIsExpanded(content.length > 0);
+    debouncedAnalyzeDraft(content);
   };
 
   useEffect(() => {
@@ -171,11 +162,11 @@ export default function ChatPage() {
 
     setIsSending(true);
     const optimisticMessage: Message = {
-      id: Date.now(),
+      id: Date.now(), 
       content: draftMessage,
       role: "user",
       conversationId: conversation.id,
-      optimistic: true
+      optimistic: true 
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
@@ -244,10 +235,8 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {showAurora && (
-        <Card className={`mx-4 mb-2 transition-all duration-300 ease-in-out ${
-          !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] scale-y-20 overflow-hidden opacity-50' : 'h-auto scale-y-100 opacity-100'
-        } ${
+      {showAurora && (auroraFeedback.feedback || isAnalyzing) && (
+        <Card className={`mx-4 mb-2 ${
           !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
           auroraFeedback.connectionScore >= 7
             ? 'border-green-200 bg-green-50'
@@ -318,23 +307,24 @@ export default function ChatPage() {
 
       <div className="p-4 border-t bg-white">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <div className="h-[80px]">
+          <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'scale-y-100' : 'scale-y-20'}`}>
             <Textarea
               value={draftMessage}
               onChange={handleDraftChange}
               onKeyDown={handleKeyDown}
               placeholder="Type your message..."
-              className="resize-none h-full"
+              className={`min-h-[80px] resize-none transition-all duration-300 ease-in-out ${
+                isExpanded ? 'opacity-100' : 'opacity-70'
+              }`}
             />
           </div>
-          <div className="flex justify-end">
+          <div className={`flex justify-end transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
             <Button type="submit" className="rounded-full" disabled={isSending}>
               <Send size={18} className="mr-1" /> {isSending ? "Sending..." : "Send"}
             </Button>
           </div>
         </form>
       </div>
-
     </div>
   );
 }

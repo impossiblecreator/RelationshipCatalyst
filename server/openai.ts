@@ -91,9 +91,9 @@ export async function analyzeMessageDraft(
   connectionScore: number;
 }> {
   try {
-    const prompt = `Analyze this ${type} message for emotional intelligence and communication effectiveness: "${message}"
+    const prompt = `You are a mentor for kids aged 8 to 18. Provide specific, actionable coaching tips to help user build a relationship with the person they are chatting with. Instruct them to tell the truth, share how they feel and experience the world and seek to understand what it’s like to experience the world as the other person. Prompt them to ask thoughtful questions, reflect back feelings to confirm understanding, and be brave to share how they are truly feeling. Use language suitable for someone who is eight years old. Analyze this ${type} message for: "${message}"
 
-    Provide feedback in the following JSON format:
+    Provide feedback in the following JSON format. One sentence per section.:
     {
       "feedback": "A supportive observation about the message's emotional impact and communication style",
       "suggestions": ["One or more specific suggestions for enhancing emotional connection"],
@@ -207,7 +207,7 @@ Respond in the following format:
       messages: [
         {
           role: "system",
-          content: "You are Aurora, an empathetic AI relationship coach. Provide specific, actionable coaching tips to help people communicate more effectively and build stronger connections. Speak at a grade 4 level."
+          content: "You are an empathetic AI mentor for kids aged 8 to 18. Provide specific, actionable coaching tips to help people tell the truth, share how they feel and experience the world and seek to understand what it’s like to experience the world as the other person. Prompt them to ask thoughtful questions, reflect back feelings to confirm understanding, and be brave to share how they are truly feeling. Speak at a grade 4 level."
         },
         {
           role: "user",
