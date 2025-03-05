@@ -147,7 +147,18 @@ export default function ChatPage() {
   const handleDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const content = e.target.value;
     setDraftMessage(content);
-    debouncedAnalyzeDraft(content);
+
+    if (!content.trim()) {
+      // Clear Aurora's feedback when input is empty
+      setAuroraFeedback({
+        feedback: "",
+        suggestions: [],
+        connectionScore: 0
+      });
+      setIsAnalyzing(false);
+    } else {
+      debouncedAnalyzeDraft(content);
+    }
   };
 
   useEffect(() => {
@@ -235,7 +246,7 @@ export default function ChatPage() {
 
       {showAurora && (
         <Card className={`mx-4 mb-2 transition-all duration-300 ease-in-out ${
-          !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] overflow-hidden opacity-50' : 'h-auto opacity-100'
+          !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] scale-y-20 overflow-hidden opacity-50' : 'h-auto scale-y-100 opacity-100'
         } ${
           !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
           auroraFeedback.connectionScore >= 7
