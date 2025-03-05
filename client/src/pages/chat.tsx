@@ -16,8 +16,8 @@ export default function ChatPage() {
   const [draftMessage, setDraftMessage] = useState("")
   const [showAurora, setShowAurora] = useState(true)
   const [auroraFeedback, setAuroraFeedback] = useState({
-    feedback: "I'm here to help guide your conversation.",
-    suggestions: ["Share what's on your mind, and I'll provide insights to help deepen the connection."],
+    feedback: "",
+    suggestions: [],
     connectionScore: 0
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
