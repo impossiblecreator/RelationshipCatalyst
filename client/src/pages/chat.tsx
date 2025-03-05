@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { Send, ChevronDown, ChevronUp, MessageSquare, Sparkles } from "lucide-react"
-import { gsap } from "gsap"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,7 +27,6 @@ export default function ChatPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const webSocketRef = useRef<{ socket: WebSocket; sendMessage: (content: string) => void } | null>(null)
   const { toast } = useToast()
-  const auroraCardRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -151,6 +149,7 @@ export default function ChatPage() {
     setDraftMessage(content);
 
     if (!content.trim()) {
+      // Clear Aurora's feedback when input is empty
       setAuroraFeedback({
         feedback: "",
         suggestions: [],
@@ -190,35 +189,6 @@ export default function ChatPage() {
       connectionScore: 0
     });
   };
-
-  // Add hover animation when Aurora card mounts or updates
-  useEffect(() => {
-    if (!auroraCardRef.current) return;
-
-    // Create the floating/breathing animation with enhanced parameters
-    const animation = gsap.to(auroraCardRef.current, {
-      y: -8,           // Slightly reduced float height for smoother motion
-      scale: 1.02,     // Subtle scale for breathing effect
-      duration: 2,     // Slower duration for more graceful movement
-      ease: "power1.inOut", // Smoother easing function
-      repeat: -1,      // Loop indefinitely 
-      yoyo: true,      // Reverse animation for seamless loop
-      immediateRender: true // Ensure animation starts immediately
-    });
-
-    // Play animation only when there's no feedback
-    if (!auroraFeedback.feedback) {
-      animation.play();
-    } else {
-      animation.pause();
-    }
-
-    // Cleanup on unmount or when feedback changes
-    return () => {
-      animation.kill();
-    };
-  }, [auroraFeedback.feedback]);
-
 
   return (
     <div className="flex flex-col h-screen max-w-3xl mx-auto bg-gray-50 border-x border-gray-200">
@@ -275,19 +245,16 @@ export default function ChatPage() {
       </div>
 
       {showAurora && (
-        <Card 
-          ref={auroraCardRef}
-          className={`mx-4 mb-2 transition-all duration-300 ease-in-out ${
-            !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] overflow-hidden' : 'h-auto'
-          } ${
-            !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
-            auroraFeedback.connectionScore >= 7
-              ? 'border-green-200 bg-green-50'
-              : auroraFeedback.connectionScore <= 3
-                ? 'border-red-200 bg-red-50'
-                : 'border-purple-200 bg-purple-50'
-          }`}
-        >
+        <Card className={`mx-4 mb-2 transition-all duration-300 ease-in-out ${
+          !auroraFeedback.feedback && !isAnalyzing ? 'h-[40px] scale-y-20 overflow-hidden opacity-50' : 'h-auto scale-y-100 opacity-100'
+        } ${
+          !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
+          auroraFeedback.connectionScore >= 7
+            ? 'border-green-200 bg-green-50'
+            : auroraFeedback.connectionScore <= 3
+              ? 'border-red-200 bg-red-50'
+              : 'border-purple-200 bg-purple-50'
+        }`}>
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
