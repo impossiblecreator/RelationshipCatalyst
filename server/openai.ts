@@ -1,8 +1,7 @@
 import OpenAI from "openai";
 
 export const openai = new OpenAI({ 
-  apiKey: process.env.GROQ_API_KEY || "", 
-  baseURL: "https://api.groq.com/openai/v1"
+  apiKey: process.env.OPENAI_API_KEY || "" 
 });
 
 const COMPANION_ASSISTANT_ID = "asst_kMT65BHMDYqhoIJlxSuloyHA";
@@ -97,7 +96,7 @@ export async function analyzeMessageDraft(
     Focus on empathy, clarity, and emotional awareness in your analysis.`;
 
     const response = await openai.chat.completions.create({
-      model: "mixtral-8x7b-32768",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -154,7 +153,7 @@ Provide analysis in the following JSON format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "mixtral-8x7b-32768",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -197,7 +196,7 @@ Respond in JSON format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "mixtral-8x7b-32768",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
