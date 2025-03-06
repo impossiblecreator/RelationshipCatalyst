@@ -139,22 +139,30 @@ Companion message to analyze: "${message}"
 
 Provide feedback in the following JSON format:
 {
-  "feedback": "A single supportive sentence explaining the emotional intention of the companion's message",
-  "connectionScore": A number from 1-10 indicating the message's potential for building connection
-}`
-      : `You are a mentor for kids aged 8 to 18. Analyze this conversation and provide specific, actionable coaching tips to help user build a relationship with the person they are chatting with. Instruct them to tell the truth, share how they feel and experience the world and seek to understand what it's like to experience the world as the other person. Prompt them to ask thoughtful questions, reflect back feelings to confirm understanding, and be brave to share how they are truly feeling. Use language suitable for someone who is eight years old.
+  "feedback": "A single sentence explaining the emotional intention of the companion's message",
+  }`
+      : `You are a mentor for kids aged 8 to 18. Analyze this conversation and provide specific, actionable coaching tips to help the user build a relationship with the person they are chatting with. Tell them to be honest, share how they feel and what they experience, and try to understand the other person’s feelings. Encourage them to ask thoughtful questions, repeat back what they hear to check understanding, and express their true feelings using simple language.
 
 Recent conversation history:
 ${formattedHistory}
 
 Current ${type} message to analyze: "${message}"
 
-Provide feedback in the following JSON format:
+Provide your feedback in the following JSON format with one sentence per section:
 {
   "feedback": "A supportive observation about the message's emotional impact and communication style considering the conversation context",
   "suggestions": ["One or more specific suggestions for enhancing emotional connection based on the conversation flow"],
-  "connectionScore": A number from 1-10 indicating the message's potential for building connection
-}`;
+  "componentScores": {
+      "empathy": number,         // Score from 1-10 based on how empathetic the message is.
+      "clarity": number,         // Score from 1-10 based on how clear the message is.
+      "authenticity": number,    // Score from 1-10 based on how genuine the message is.
+      "attentiveness": number    // Score from 1-10 based on how well the message reflects attention to the other person.
+  },
+  "connectionScore": A number from 1-10 calculated as the average of the componentScores (rounded to the nearest whole number),
+  "connectionLabel": "builds connection" | "neutral" | "harms connection"   // "builds connection" if connectionScore is 8–10, "neutral" if 4–7, "harms connection" if 1–3.
+}
+
+Focus on empathy, clarity, and emotional awareness in your analysis, taking into account the conversation history.`;
 
     console.log("\nAurora Analysis Request:", {
       messageType: type,

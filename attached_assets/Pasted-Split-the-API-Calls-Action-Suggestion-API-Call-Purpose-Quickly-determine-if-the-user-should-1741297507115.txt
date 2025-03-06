@@ -1,0 +1,43 @@
+Split the API Calls:
+	•	Action Suggestion API Call:
+	•	Purpose: Quickly determine if the user should “Send your message” or “Revise your message.”
+	•	Output: A JSON containing:
+	•	connectionScore: A numeric score calculated from the conversation analysis.
+	•	actionSuggestion:
+	•	“Send your message” if the score is between 8–10.
+	•	“Revise your message” if the score is below 8.
+	•	Detailed Analysis API Call:
+	•	Purpose: Provide additional feedback for the user.
+	•	Output: A JSON containing two fields:
+	•	suggestion: A one-sentence recommendation (visible by default in the Aurora Feedback Box).
+	•	feedback: A one-sentence supportive observation (hidden until the user clicks “learn more”).
+	2.	Update LLM Prompts:
+	•	For the Action Suggestion API:
+Instruct the LLM to:
+	•	Analyze the conversation.
+	•	Compute a reliable connectionScore.
+	•	Output the appropriate actionSuggestion based solely on that score.
+	•	For the Detailed Analysis API:
+Instruct the LLM to:
+	•	Provide a one-sentence suggestion that serves as the main visible text.
+	•	Provide a one-sentence feedback that explains the reasoning.
+	•	Note: Do not include any numeric scores or component breakdowns here.
+	3.	Revise the Aurora Feedback Box UI Behavior:
+	•	Minimized State:
+	•	Display:
+	•	Only the suggestion text from the Detailed Analysis API.
+	•	Append a “learn more” link at the end.
+	•	Visual Cues (derived from the Action Suggestion API’s connectionScore):
+	•	Green Indicator: If connectionScore is 8 or above.
+	•	Grey Indicator: If connectionScore is between 5 and 7.
+	•	Expanded State:
+	•	Trigger: Clicking the “learn more” link.
+	•	Display: Reveal the one-sentence feedback alongside the suggestion.
+	•	Auto-Expand Behavior:
+	•	If the connectionScore is below 5 (red state), the Aurora Feedback Box should automatically expand to show both the suggestion and feedback immediately.
+	4.	Centralize UI Mapping Logic:
+	•	Remove any connectionColor logic from the LLM output.
+	•	Have the UI calculate the color indicator solely based on the connectionScore received from the Action Suggestion API:
+	•	Green: Score ≥ 8.
+	•	Grey: Score 5–7.
+	•	Red: Score < 5.
