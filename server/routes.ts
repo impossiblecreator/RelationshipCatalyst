@@ -1,105 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertMessageSchema, insertConversationSchema } from "@shared/schema";
 import { generateCompanionResponse, analyzeMessageDraft } from "./openai";
-
-interface WSMessage {
-  type: "message" | "typing";
-  conversationId: number;
-  content?: string;
-}
+import { setupWebSocketServer } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
-  // Create WebSocket server with explicit port
-  const wss = new WebSocketServer({ 
-    server: httpServer,
-    path: "/ws"
-  });
-
-  const clients = new Map<WebSocket, number>();
-
-  wss.on("connection", (ws) => {
-    console.log("New WebSocket connection established");
-
-    // Keep track of which conversation this websocket is for
-    let conversationId: number | null = null;
-
-    ws.on("message", async (data) => {
-      try {
-        const message: WSMessage = JSON.parse(data.toString());
-        console.log("Received WebSocket message:", message);
-
-        // Store the conversationId for this connection
-        if (!conversationId) {
-          conversationId = message.conversationId;
-          clients.set(ws, conversationId);
-          console.log(`Associated client with conversation ${conversationId}`);
-        }
-
-        if (message.type === "message" && message.content) {
-          // 1. Store user message in database
-          const validatedMessage = insertMessageSchema.parse({
-            content: message.content,
-            role: "user",
-            conversationId: message.conversationId
-          });
-
-          const savedMessage = await storage.createMessage(validatedMessage);
-
-          // Get the conversation to access threadId
-          const conversation = await storage.getConversation(message.conversationId);
-          if (!conversation) {
-            throw new Error("Conversation not found");
-          }
-
-          // 2. Get AI companion response with thread context
-          const { content: aiResponseContent, threadId } = await generateCompanionResponse(
-            message.content,
-            message.conversationId,
-            conversation.threadId
-          );
-
-          // Update conversation with threadId if it's new
-          if (!conversation.threadId && threadId !== 'error') {
-            await storage.updateConversationThread(message.conversationId, threadId);
-          }
-
-          // 3. Store AI response in database
-          const companionMessage = await storage.createMessage({
-            content: aiResponseContent,
-            role: "companion",
-            conversationId: message.conversationId
-          });
-
-          // 4. Send both messages back to client
-          wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN && clients.get(client) === message.conversationId) {
-              client.send(JSON.stringify([savedMessage, companionMessage]));
-            }
-          });
-        }
-      } catch (error) {
-        console.error("WebSocket message error:", error);
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ error: "Failed to process message" }));
-        }
-      }
-    });
-
-    ws.on("close", () => {
-      console.log("WebSocket connection closed");
-      clients.delete(ws);
-    });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-      clients.delete(ws);
-    });
-  });
+  // Set up WebSocket server with proper handling
+  const wsHandler = setupWebSocketServer(httpServer);
 
   app.post("/api/conversations", async (req, res) => {
     try {
@@ -145,6 +55,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Analysis error:", error);
       res.status(500).json({ error: "Failed to analyze message" });
+    }
+  });
+
+  // Create a message handler for the WebSocket
+  app.post("/api/messages", async (req, res) => {
+    try {
+      const { content, conversationId } = req.body;
+
+      if (!content || !conversationId) {
+        return res.status(400).json({ error: "Content and conversationId are required" });
+      }
+
+      // 1. Store user message in database
+      const validatedMessage = insertMessageSchema.parse({
+        content,
+        role: "user",
+        conversationId
+      });
+
+      const savedMessage = await storage.createMessage(validatedMessage);
+
+      // Get the conversation to access threadId
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+
+      // 2. Get AI companion response with thread context
+      const { content: aiResponseContent, threadId } = await generateCompanionResponse(
+        content,
+        conversationId,
+        conversation.threadId
+      );
+
+      // Update conversation with threadId if it's new
+      if (!conversation.threadId && threadId !== 'error') {
+        await storage.updateConversationThread(conversationId, threadId);
+      }
+
+      // 3. Store AI response in database
+      const companionMessage = await storage.createMessage({
+        content: aiResponseContent,
+        role: "companion",
+        conversationId
+      });
+
+      // 4. Broadcast messages via WebSocket
+      wsHandler.broadcastToConversation(conversationId, [savedMessage, companionMessage]);
+
+      res.json([savedMessage, companionMessage]);
+    } catch (error) {
+      console.error("Message creation error:", error);
+      res.status(500).json({ error: "Failed to process message" });
     }
   });
 
