@@ -44,9 +44,40 @@ Message to analyze: "${message}"`
       throw new Error("No response received from Groq");
     }
 
-    const analysis = JSON.parse(response.choices[0].message.content);
+    let analysis;
+    try {
+      // Try to parse the complete response
+      analysis = JSON.parse(response.choices[0].message.content);
+    } catch (parseError) {
+      console.error("Failed to parse complete JSON response:", parseError);
+
+      // If complete parsing fails, try to extract the connectionScore from the failed_generation
+      if (parseError instanceof Error && 'failed_generation' in (parseError as any)) {
+        const failedGen = (parseError as any).failed_generation;
+        try {
+          // Extract score using regex
+          const scoreMatch = failedGen.match(/"connectionScore":\s*(\d+)/);
+          const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
+
+          // Extract feedback if possible
+          const feedbackMatch = failedGen.match(/"feedback":\s*"([^"]+)/);
+          const feedback = feedbackMatch ? 
+            feedbackMatch[1] + '..."' : 
+            "I'm unable to analyze this message right now. Please try again.";
+
+          analysis = { score, feedback };
+        } catch (extractError) {
+          console.error("Failed to extract partial data:", extractError);
+          throw parseError; // Throw original error if extraction fails
+        }
+      } else {
+        throw parseError; // Throw original error if it's not the expected format
+      }
+    }
+
     return {
-      score: typeof analysis.score === 'number' ? analysis.score : 5,
+      score: typeof analysis.score === 'number' ? analysis.score : 
+             typeof analysis.connectionScore === 'number' ? analysis.connectionScore : 5,
       feedback: analysis.feedback || "I'm unable to analyze this message right now. Please try again."
     };
   } catch (error) {
