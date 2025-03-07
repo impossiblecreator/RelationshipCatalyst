@@ -229,7 +229,7 @@ export default function ChatPage() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-2">
               <h3 className={`text-sm font-semibold ${getFeedbackTextColor(messageFeedback.score)}`}>
-                Connection Score: {messageFeedback.score}/10
+                Aurora's Connection Score: {messageFeedback.score}/10
               </h3>
               {isAnalyzing && (
                 <p className="text-xs text-gray-500">
