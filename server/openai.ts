@@ -16,15 +16,25 @@ export async function calculateConnectionScore(message: string): Promise<{
       messages: [
         {
           role: "system",
-          content: "You are an abstract representation of god tasked with helping young people develop relationships with each other and with adults. Your job is to provide feedback on text messages they are about to send to each other to help them make friendships."
+          content: "You are an expert relationship coach helping people improve their communication. You analyze messages and provide constructive feedback with a numerical score."
         },
         {
           role: "user",
-          content: `Rate this message with a score (1-10) and feedback. Return as JSON: "${message}"`
+          content: `Analyze this message and respond with a JSON object containing:
+1. A "score" (number between 1-10)
+2. A "feedback" string with specific, constructive advice
+
+Scoring criteria:
+- 1-3: Highly negative, aggressive, or harmful
+- 4-5: Somewhat negative or unclear
+- 6-7: Neutral or mildly positive
+- 8-10: Very positive, empathetic, and relationship-building
+
+Message to analyze: "${message}"`
         }
       ],
       temperature: 0.7,
-      max_tokens: 25,
+      max_tokens: 150,
       response_format: { type: "json_object" }
     });
 
@@ -35,13 +45,13 @@ export async function calculateConnectionScore(message: string): Promise<{
     const analysis = JSON.parse(response.choices[0].message.content);
     return {
       score: typeof analysis.score === 'number' ? analysis.score : 5,
-      feedback: analysis.feedback || "I'm unable to reach the greater consciousness right now. The universe is calling you to take this one on your own."
+      feedback: analysis.feedback || "I'm unable to analyze this message right now. Please try again."
     };
   } catch (error) {
     console.error("Error calculating connection score:", error);
     return {
       score: 5,
-      feedback: "I'm unable to reach the greater consciousness right now. The universe is calling you to take this one on your own."
+      feedback: "I'm unable to analyze this message right now. Please try again."
     };
   }
 }
