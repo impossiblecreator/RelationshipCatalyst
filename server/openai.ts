@@ -16,15 +16,25 @@ export async function calculateConnectionScore(message: string): Promise<{
       messages: [
         {
           role: "system",
-          content: "You are an abstract representation of god tasked with helping young people develop relationships with each other and with adults. Your job is to provide feedback on text messages they are about to send to each other to help them make friendships."
+          content: "You are an expert relationship coach helping people improve their communication. You analyze messages and provide constructive feedback with a numerical score."
         },
         {
           role: "user",
-          content: `analyize this message from user to a friend and create a connectionScore. 0 represents a score certain to damage their relationship and 10 is a comment certain to contribute to an authentic, secure, meaningful relationship. Use the following rubric to assign a \"connectionScore\" from 1 to 10: \n- 1–3: The message is highly aggressive, insulting, or hateful and is very likely to harm the relationship.\n- 4–5: The message is somewhat negative or unhelpful but not overtly hateful; it lacks empathy or clarity.\n- 6–7: The message is neutral or mildly constructive, but could be improved in empathy, clarity, or authenticity.\n- 8–10: The message is positive, empathetic, and authentic, likely to build a strong connection.\nReturn your response as a JSON object: \"${message}\"`
+          content: `Analyze this message and respond with a JSON object containing:
+1. A "score" (number between 1-10)
+2. A "feedback" string with specific, constructive advice
+
+Scoring criteria:
+- 1-3: Highly negative, aggressive, or harmful
+- 4-5: Somewhat negative or unclear
+- 6-7: Neutral or mildly positive
+- 8-10: Very positive, empathetic, and relationship-building
+
+Message to analyze: "${message}"`
         }
       ],
       temperature: 0.7,
-      max_tokens: 25,
+      max_tokens: 150,
       response_format: { type: "json_object" }
     });
 
@@ -34,14 +44,14 @@ export async function calculateConnectionScore(message: string): Promise<{
 
     const analysis = JSON.parse(response.choices[0].message.content);
     return {
-      score: analysis.score || "",
-      feedback: analysis.feedback || "I'm unable to reach the greater conciousness right now. The universe is calling you to take this one on your own."
+      score: typeof analysis.score === 'number' ? analysis.score : 5,
+      feedback: analysis.feedback || "I'm unable to analyze this message right now. Please try again."
     };
   } catch (error) {
     console.error("Error calculating connection score:", error);
     return {
-      score: "",
-      feedback: "I'm unable to reach the greater conciousness right now. The universe is calling you to take this one on your own."
+      score: 5,
+      feedback: "I'm unable to analyze this message right now. Please try again."
     };
   }
 }
