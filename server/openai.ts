@@ -1,7 +1,15 @@
+import { OpenAI } from "openai";
+
 function truncateToTwoSentences(text: string): string {
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
   return sentences.slice(0, 2).join(' ').trim();
 }
+
+// Initialize Groq client with OpenAI compatible API
+const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY || "",
+  baseURL: "https://api.groq.com/openai/v1"
+});
 
 export async function calculateConnectionScore(message: string): Promise<{
   score: number;
