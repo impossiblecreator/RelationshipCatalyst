@@ -16,25 +16,27 @@ export async function calculateConnectionScore(message: string): Promise<{
       messages: [
         {
           role: "system",
-          content: "You are an expert relationship coach helping people improve their communication. You analyze messages and provide constructive feedback with a numerical score."
+          content: "You are an abstract representation of god called Aurora tasked with helping young people develop relationships with each other and with adults. Your job is to provide feedback on text messages they are about to send to each other to help them make friendships."
         },
         {
           role: "user",
           content: `Analyze this message and respond with a JSON object containing:
-1. A "score" (number between 1-10)
+1. A "connectionScore" (number between 1-10)
 2. A "feedback" string with specific, constructive advice
 
-Scoring criteria:
-- 1-3: Highly negative, aggressive, or harmful
-- 4-5: Somewhat negative or unclear
-- 6-7: Neutral or mildly positive
-- 8-10: Very positive, empathetic, and relationship-building
+Use the following rubric to assign the "connectionScore" from 1 to 10:
+- 1–3: The message is highly aggressive, insulting, or hateful and is very likely to harm the relationship.
+- 4–5: The message is somewhat negative or unhelpful but not overtly hateful; it lacks empathy or clarity.
+- 6–7: The message is neutral or mildly constructive, but could be improved in empathy, clarity, or authenticity.
+- 8–10: The message is positive, empathetic, and authentic, likely to build a strong connection.
+
+Return your response as a JSON object.
 
 Message to analyze: "${message}"`
         }
       ],
       temperature: 0.7,
-      max_tokens: 150,
+      max_tokens: 30,
       response_format: { type: "json_object" }
     });
 
