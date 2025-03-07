@@ -11,16 +11,27 @@ export async function calculateConnectionScore(message: string): Promise<{
   feedback: string;
 }> {
   try {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY is not set");
+    }
+
     const response = await groq.chat.completions.create({
       model: "llama3-8b-8192",
       messages: [
         {
           role: "system",
-          content: "You are an ex-high school teacher who is great at building relationships with young people and helping them develop relationships with each other and with adults. Your job is to provide feedback on text messages they are about to send to each other to help them make friendships by giving them a Connection Score between 0 and 10. 0 represents a score certain to damage their relationship and 10 is a comment certain to contribute to an authentic, secure, meaningful relationship. Return your response as a JSON object."
+          content: `You analyze text messages and provide feedback to help build better relationships. For each message:
+1. Assign a score from 0-10
+2. Provide brief feedback
+Respond in this exact JSON format:
+{
+  "score": <number 0-10>,
+  "feedback": "<single sentence feedback>"
+}`
         },
         {
           role: "user",
-          content: `Please analyze this message and provide a connection score (0-10) and brief feedback in JSON format: "${message}"`
+          content: `Rate this message (0=damaging relationship, 10=building strong connection): "${message}"`
         }
       ],
       temperature: 0.7,
@@ -34,7 +45,7 @@ export async function calculateConnectionScore(message: string): Promise<{
 
     const analysis = JSON.parse(response.choices[0].message.content);
     return {
-      score: analysis.score || 5,
+      score: typeof analysis.score === 'number' ? Math.min(10, Math.max(0, analysis.score)) : 5,
       feedback: analysis.feedback || "Unable to analyze the message"
     };
   } catch (error) {

@@ -1,0 +1,46 @@
+11:17:46 PM [websocket] Associated client with conversation 188
+Error calculating connection score: BadRequestError: 400 Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async calculateConnectionScore (/home/runner/workspace/server/openai.ts:14:22)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:43:24) {
+  status: 400,
+  headers: {
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cache-control': 'private, max-age=0, no-store, no-cache, must-revalidate',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '91cdcefb59d827f2-SEA',
+    connection: 'keep-alive',
+    'content-length': '318',
+    'content-type': 'application/json',
+    date: 'Fri, 07 Mar 2025 23:17:50 GMT',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=KFyVjUv7rJJ9hGmUWce_afhtXZMoIuVWk9ve1EgcB5g-1741389470-1.0.1.1-Efx4_6abeJokjNko0NVRO4Zmd2wvWM.oVr7vgw9z3oq1On2_Xb2EnUF8IpkuqXam7B4JF79T2wBWgQIcjWXLVSLsHtcZ75JFMsYm4qzyCy0; path=/; expires=Fri, 07-Mar-25 23:47:50 GMT; domain=.groq.com; HttpOnly; Secure; SameSite=None',
+    vary: 'Origin',
+    via: '1.1 google',
+    'x-groq-region': 'us-west-1',
+    'x-ratelimit-limit-requests': '14400',
+    'x-ratelimit-limit-tokens': '6000',
+    'x-ratelimit-remaining-requests': '14399',
+    'x-ratelimit-remaining-tokens': '5807',
+    'x-ratelimit-reset-requests': '6s',
+    'x-ratelimit-reset-tokens': '1.93s',
+    'x-request-id': 'req_01jnsed69eer3tq0q803358j4v'
+  },
+  request_id: 'req_01jnsed69eer3tq0q803358j4v',
+  error: {
+    message: "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.",
+    type: 'invalid_request_error',
+    code: 'json_validate_failed',
+    failed_generation: '```json\n' +
+      '{\n' +
+      '   "connectionScore": 4,\n' +
+      `   "feedback": "This message is a bit vague and doesn't add much value to`
+  },
+  code: 'json_validate_failed',
+  param: undefined,
+  type: 'invalid_request_error'
+}
+11:17:50 PM [express] POST /api/analyze 200 in 150ms :: {"score":"","feedback":"I'm unable to reach t…
