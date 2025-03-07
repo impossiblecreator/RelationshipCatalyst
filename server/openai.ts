@@ -36,7 +36,7 @@ Message to analyze: "${message}"`
         }
       ],
       temperature: 0.7,
-      max_tokens: 30,
+      max_tokens: 150, // Increased from 30 to ensure complete responses
       response_format: { type: "json_object" }
     });
 
@@ -46,20 +46,16 @@ Message to analyze: "${message}"`
 
     let analysis;
     try {
-      // Try to parse the complete response
       analysis = JSON.parse(response.choices[0].message.content);
     } catch (parseError) {
       console.error("Failed to parse complete JSON response:", parseError);
 
-      // If complete parsing fails, try to extract the connectionScore from the failed_generation
       if (parseError instanceof Error && 'failed_generation' in (parseError as any)) {
         const failedGen = (parseError as any).failed_generation;
         try {
-          // Extract score using regex
           const scoreMatch = failedGen.match(/"connectionScore":\s*(\d+)/);
           const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
 
-          // Extract feedback if possible
           const feedbackMatch = failedGen.match(/"feedback":\s*"([^"]+)/);
           const feedback = feedbackMatch ? 
             feedbackMatch[1] + '..."' : 
@@ -68,10 +64,10 @@ Message to analyze: "${message}"`
           analysis = { score, feedback };
         } catch (extractError) {
           console.error("Failed to extract partial data:", extractError);
-          throw parseError; // Throw original error if extraction fails
+          throw parseError;
         }
       } else {
-        throw parseError; // Throw original error if it's not the expected format
+        throw parseError;
       }
     }
 

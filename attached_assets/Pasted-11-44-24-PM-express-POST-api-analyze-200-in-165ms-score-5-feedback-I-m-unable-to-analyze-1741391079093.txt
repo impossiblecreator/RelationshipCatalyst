@@ -1,0 +1,46 @@
+11:44:24 PM [express] POST /api/analyze 200 in 165ms :: {"score":5,"feedback":"I'm unable to analyze …
+Error calculating connection score: BadRequestError: 400 Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async calculateConnectionScore (/home/runner/workspace/server/openai.ts:14:22)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:43:24) {
+  status: 400,
+  headers: {
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cache-control': 'private, max-age=0, no-store, no-cache, must-revalidate',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '91cdf5f07f9108a1-SEA',
+    connection: 'keep-alive',
+    'content-length': '345',
+    'content-type': 'application/json',
+    date: 'Fri, 07 Mar 2025 23:44:25 GMT',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=aHey.vDEzNP7cbmVDblfB9KIlYZwDfznG.usiD6udQg-1741391065-1.0.1.1-73zK4nv_LLSKwk_2sBLaPoTa5gjEpP4l_xuG7.yiDqfoKGbj6nY6WLP5ocYYMMhShiaIrLHEBv8lt7SPCvvCbOKqHu7uBW80Mov9M3XpG.c; path=/; expires=Sat, 08-Mar-25 00:14:25 GMT; domain=.groq.com; HttpOnly; Secure; SameSite=None',
+    vary: 'Origin',
+    via: '1.1 google',
+    'x-groq-region': 'us-west-1',
+    'x-ratelimit-limit-requests': '14400',
+    'x-ratelimit-limit-tokens': '6000',
+    'x-ratelimit-remaining-requests': '14398',
+    'x-ratelimit-remaining-tokens': '5736',
+    'x-ratelimit-reset-requests': '10.886s',
+    'x-ratelimit-reset-tokens': '2.64s',
+    'x-request-id': 'req_01jnsfxwkbezh8tvvqcy78319k'
+  },
+  request_id: 'req_01jnsfxwkbezh8tvvqcy78319k',
+  error: {
+    message: "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.",
+    type: 'invalid_request_error',
+    code: 'json_validate_failed',
+    failed_generation: '```json\n' +
+      '{\n' +
+      '   "connectionScore": 3,\n' +
+      '   "feedback": "Aurora suggests rephrasing the message to show more empathy and clarity. For example'
+  },
+  code: 'json_validate_failed',
+  param: undefined,
+  type: 'invalid_request_error'
+}
+11:44:25 PM [express] POST /api/analyze 200 in 145ms :: {"score":5,"feedback":"I'm unable to analyze …
