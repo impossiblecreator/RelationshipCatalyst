@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { insertMessageSchema, insertConversationSchema } from "@shared/schema";
 import { calculateConnectionScore } from "./openai";
 import { setupWebSocketServer } from "./websocket";
+import type { Message } from '@shared/types';
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -35,12 +37,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { message } = req.body;
+      const { message, conversationId } = req.body;
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      const analysis = await calculateConnectionScore(message);
+      let conversationHistory: Message[] = [];
+      if (conversationId) {
+        conversationHistory = await storage.getMessages(conversationId);
+        conversationHistory = conversationHistory.slice(-20);
+      }
+
+      const analysis = await calculateConnectionScore(message, conversationHistory);
       res.json(analysis);
     } catch (error) {
       console.error("Analysis error:", error);
@@ -48,7 +56,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a message handler for the WebSocket
   app.post("/api/messages", async (req, res) => {
     try {
       const { content, conversationId } = req.body;

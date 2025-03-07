@@ -109,7 +109,8 @@ export default function ChatPage() {
     setIsAnalyzing(true);
     try {
       const response = await apiRequest("POST", "/api/analyze", {
-        message: content
+        message: content,
+        conversationId: conversation?.id // Add conversation ID to the request
       });
       const data = await response.json();
       setMessageFeedback(data);
