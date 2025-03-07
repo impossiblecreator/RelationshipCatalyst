@@ -1,10 +1,7 @@
-import OpenAI from "openai";
-
-// Groq client
-const groq = new OpenAI({ 
-  apiKey: process.env.GROQ_API_KEY || "", 
-  baseURL: "https://api.groq.com/openai/v1"
-});
+function truncateToTwoSentences(text: string): string {
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+  return sentences.slice(0, 2).join(' ').trim();
+}
 
 export async function calculateConnectionScore(message: string): Promise<{
   score: number;
@@ -36,7 +33,7 @@ Message to analyze: "${message}"`
         }
       ],
       temperature: 0.7,
-      max_tokens: 150, // Increased from 30 to ensure complete responses
+      max_tokens: 150,
       response_format: { type: "json_object" }
     });
 
@@ -47,6 +44,10 @@ Message to analyze: "${message}"`
     let analysis;
     try {
       analysis = JSON.parse(response.choices[0].message.content);
+      // Truncate feedback to two sentences
+      if (analysis.feedback) {
+        analysis.feedback = truncateToTwoSentences(analysis.feedback);
+      }
     } catch (parseError) {
       console.error("Failed to parse complete JSON response:", parseError);
 
@@ -57,9 +58,12 @@ Message to analyze: "${message}"`
           const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
 
           const feedbackMatch = failedGen.match(/"feedback":\s*"([^"]+)/);
-          const feedback = feedbackMatch ? 
+          let feedback = feedbackMatch ? 
             feedbackMatch[1] + '..."' : 
             "I'm unable to analyze this message right now. Please try again.";
+
+          // Ensure feedback is truncated to two sentences
+          feedback = truncateToTwoSentences(feedback);
 
           analysis = { score, feedback };
         } catch (extractError) {
@@ -74,7 +78,7 @@ Message to analyze: "${message}"`
     return {
       score: typeof analysis.score === 'number' ? analysis.score : 
              typeof analysis.connectionScore === 'number' ? analysis.connectionScore : 5,
-      feedback: analysis.feedback || "I'm unable to analyze this message right now. Please try again."
+      feedback: truncateToTwoSentences(analysis.feedback) || "I'm unable to analyze this message right now. Please try again."
     };
   } catch (error) {
     console.error("Error calculating connection score:", error);

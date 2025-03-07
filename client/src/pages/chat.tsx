@@ -147,10 +147,13 @@ export default function ChatPage() {
     e.preventDefault();
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
+    const trimmedMessage = draftMessage.trim();
+    if (trimmedMessage === '') return; // Prevent empty messages
+
     setIsSending(true);
     const optimisticMessage = {
       id: Date.now(),
-      content: draftMessage,
+      content: trimmedMessage,
       role: "user",
       conversationId: conversation.id,
       timestamp: new Date(),
@@ -158,7 +161,7 @@ export default function ChatPage() {
     } as Message;
 
     setMessages(prev => [...prev, optimisticMessage]);
-    webSocketRef.current.sendMessage(draftMessage);
+    webSocketRef.current.sendMessage(trimmedMessage);
     setDraftMessage("");
     setMessageFeedback({
       score: 0,
