@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
-import { Send, ChevronDown, ChevronUp, MessageSquare, Sparkles } from "lucide-react"
+import { Send, ChevronDown, ChevronUp, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,15 +14,13 @@ import debounce from "lodash/debounce"
 
 export default function ChatPage() {
   const [draftMessage, setDraftMessage] = useState("")
-  const [showAurora, setShowAurora] = useState(true)
-  const [auroraFeedback, setAuroraFeedback] = useState({
-    feedback: "",
-    suggestions: [],
-    connectionScore: 0
+  const [showFeedback, setShowFeedback] = useState(true)
+  const [messageFeedback, setMessageFeedback] = useState({
+    score: 0,
+    feedback: ""
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
@@ -49,7 +47,7 @@ export default function ChatPage() {
       setConversation(newConversation);
       toast({
         title: "Chat started",
-        description: "You can now start chatting with your AI companion",
+        description: "You can now start chatting",
       });
     },
     onError: (error) => {
@@ -86,14 +84,6 @@ export default function ChatPage() {
         const withoutOptimistic = prev.filter(m => !m.optimistic);
         return [...withoutOptimistic, ...newMessages];
       });
-
-      if (newMessages.length > 0) {
-        const companionMessage = newMessages.find(msg => msg.role === "companion");
-        if (companionMessage) {
-          analyzeMessage(companionMessage.content, "companion");
-        }
-      }
-
       setIsSending(false);
     });
 
@@ -115,35 +105,29 @@ export default function ChatPage() {
     };
   }, [conversation]);
 
-  const analyzeMessage = async (content: string, type: "companion" | "user-draft" | "user-sent") => {
+  const analyzeMessage = async (content: string) => {
     setIsAnalyzing(true);
     try {
       const response = await apiRequest("POST", "/api/analyze", {
-        message: content,
-        type: type,
-        conversationHistory: messages.slice(-25).map(msg => ({
-          role: msg.role === "companion" ? "user's friend" : "user",
-          content: msg.content
-        }))
+        message: content
       });
       const data = await response.json();
-      setAuroraFeedback(data);
+      setMessageFeedback(data);
     } catch (error) {
-      console.error("Error getting Aurora's analysis:", error);
-      setAuroraFeedback({
-        feedback: "I need a moment to reflect on this interaction.",
-        suggestions: ["Take a moment to consider the emotional undertones."],
-        connectionScore: 5
+      console.error("Error analyzing message:", error);
+      setMessageFeedback({
+        score: 5,
+        feedback: "Unable to analyze the message"
       });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const debouncedAnalyzeDraft = useCallback(
+  const debouncedAnalyze = useCallback(
     debounce((content: string) => {
       if (content.trim()) {
-        analyzeMessage(content, "user-draft");
+        analyzeMessage(content);
       }
     }, 1000),
     []
@@ -152,8 +136,7 @@ export default function ChatPage() {
   const handleDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const content = e.target.value;
     setDraftMessage(content);
-    setIsExpanded(content.length > 0);
-    debouncedAnalyzeDraft(content);
+    debouncedAnalyze(content);
   };
 
   useEffect(() => {
@@ -165,24 +148,34 @@ export default function ChatPage() {
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
     setIsSending(true);
-    const optimisticMessage: Message = {
+    const optimisticMessage = {
       id: Date.now(),
       content: draftMessage,
       role: "user",
       conversationId: conversation.id,
+      timestamp: new Date(),
       optimistic: true
-    };
+    } as Message;
+
     setMessages(prev => [...prev, optimisticMessage]);
-
-    await analyzeMessage(draftMessage, "user-sent");
-
     webSocketRef.current.sendMessage(draftMessage);
     setDraftMessage("");
-    setAuroraFeedback({
-      feedback: "",
-      suggestions: [],
-      connectionScore: 0
+    setMessageFeedback({
+      score: 0,
+      feedback: ""
     });
+  };
+
+  const getFeedbackColor = (score: number) => {
+    if (score >= 8) return 'border-green-200 bg-green-50';
+    if (score <= 3) return 'border-red-200 bg-red-50';
+    return 'border-gray-200 bg-gray-50';
+  };
+
+  const getFeedbackTextColor = (score: number) => {
+    if (score >= 8) return 'text-green-700';
+    if (score <= 3) return 'text-red-700';
+    return 'text-gray-700';
   };
 
   return (
@@ -193,18 +186,17 @@ export default function ChatPage() {
             <MessageSquare size={20} />
           </div>
           <div>
-            <h1 className="font-semibold">Prototype: Aurora's Insights In Fawn Chat</h1>
+            <h1 className="font-semibold">Chat Application</h1>
             <p className="text-xs text-gray-500">Online</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowAurora(!showAurora)}
+          onClick={() => setShowFeedback(!showFeedback)}
           className="flex items-center gap-1"
         >
-          <Sparkles className="w-4 h-4 text-purple-500" />
-          Aurora's Insights {showAurora ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          Feedback {showFeedback ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </Button>
       </div>
 
@@ -229,81 +221,26 @@ export default function ChatPage() {
             </div>
           ))
         )}
-        {isSending && !messages.some(m => m.optimistic) && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gray-100 text-gray-500">
-              Companion is typing...
-            </div>
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
 
-      {showAurora && (auroraFeedback.feedback || isAnalyzing) && (
-        <Card className={`mx-4 mb-2 ${
-          !auroraFeedback.connectionScore ? 'border-purple-200 bg-purple-50' :
-          auroraFeedback.connectionScore >= 7
-            ? 'border-green-200 bg-green-50'
-            : auroraFeedback.connectionScore <= 3
-              ? 'border-red-200 bg-red-50'
-              : 'border-purple-200 bg-purple-50'
-        }`}>
+      {showFeedback && (messageFeedback.feedback || isAnalyzing) && (
+        <Card className={`mx-4 mb-2 ${getFeedbackColor(messageFeedback.score)}`}>
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className={`w-4 h-4 ${
-                  !auroraFeedback.connectionScore ? 'text-purple-500' :
-                  auroraFeedback.connectionScore >= 7
-                    ? 'text-green-500'
-                    : auroraFeedback.connectionScore <= 3
-                      ? 'text-red-500'
-                      : 'text-purple-500'
-                }`} />
-                <h3 className={`text-sm font-semibold ${
-                  !auroraFeedback.connectionScore ? 'text-purple-700' :
-                  auroraFeedback.connectionScore >= 7
-                    ? 'text-green-700'
-                    : auroraFeedback.connectionScore <= 3
-                      ? 'text-red-700'
-                      : 'text-purple-700'
-                }`}>
-                  Aurora's Insights
-                </h3>
-              </div>
+              <h3 className={`text-sm font-semibold ${getFeedbackTextColor(messageFeedback.score)}`}>
+                Connection Score: {messageFeedback.score}/10
+              </h3>
               {isAnalyzing && (
-                <p className="text-xs text-purple-500">
-                  accessing the greater consciousness
+                <p className="text-xs text-gray-500">
+                  Analyzing...
                 </p>
               )}
             </div>
-            {auroraFeedback.feedback && (
-              <>
-                <p className={`text-sm ${
-                  !auroraFeedback.connectionScore ? 'text-purple-700' :
-                  auroraFeedback.connectionScore >= 7
-                    ? 'text-green-700'
-                    : auroraFeedback.connectionScore <= 3
-                      ? 'text-red-700'
-                      : 'text-purple-700'
-                } mb-2`}>
-                  {auroraFeedback.feedback}
-                </p>
-                {auroraFeedback.suggestions.length > 0 && (
-                  <div className="mt-2">
-                    <p className={`text-xs ${
-                      !auroraFeedback.connectionScore ? 'text-purple-600' :
-                      auroraFeedback.connectionScore >= 7
-                        ? 'text-green-600'
-                        : auroraFeedback.connectionScore <= 3
-                          ? 'text-red-600'
-                          : 'text-purple-600'
-                    }`}>
-                      <span className="font-semibold">Suggestion: </span>
-                      {auroraFeedback.suggestions[0]}
-                    </p>
-                  </div>
-                )}
-              </>
+            {messageFeedback.feedback && (
+              <p className={`text-sm ${getFeedbackTextColor(messageFeedback.score)}`}>
+                {messageFeedback.feedback}
+              </p>
             )}
           </CardContent>
         </Card>
@@ -311,18 +248,14 @@ export default function ChatPage() {
 
       <div className="p-4 border-t bg-white">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'scale-y-100' : 'scale-y-20'}`}>
-            <Textarea
-              value={draftMessage}
-              onChange={handleDraftChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
-              className={`min-h-[80px] resize-none transition-all duration-300 ease-in-out ${
-                isExpanded ? 'opacity-100' : 'opacity-70'
-              }`}
-            />
-          </div>
-          <div className={`flex justify-end transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+          <Textarea
+            value={draftMessage}
+            onChange={handleDraftChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message..."
+            className="min-h-[80px] resize-none"
+          />
+          <div className="flex justify-end">
             <Button type="submit" className="rounded-full" disabled={isSending}>
               <Send size={18} className="mr-1" /> {isSending ? "Sending..." : "Send"}
             </Button>
