@@ -1,11 +1,29 @@
 import type { Message } from "@shared/schema";
 
-export interface MessageAnalysisResponse {
+interface MessageAnalysisResponse {
   messageFeedback: {
     suggestion: string[];
     strength: string[];
   };
   connectionScore: number;
+}
+
+interface MessageAnalysisRequest {
+  draft: {
+    role: string;
+    content: string;
+    created_at: null;
+  };
+  message_history: {
+    role: string;
+    content: string;
+    created_at: null;
+  }[];
+  user_attributes: {
+    gender: string;
+    age: number;
+    relationship_context: string;
+  };
 }
 
 export async function calculateConnectionScore(
@@ -19,7 +37,7 @@ export async function calculateConnectionScore(
 }> {
   try {
     // Format the request according to API spec
-    const requestBody = {
+    const requestBody: MessageAnalysisRequest = {
       draft: {
         role: "user",
         content: currentMessage,
@@ -37,27 +55,19 @@ export async function calculateConnectionScore(
       }
     };
 
-    const apiUrl = process.env.MESSAGE_ANALYSIS_API_URL;
-    if (!apiUrl) {
-      throw new Error("MESSAGE_ANALYSIS_API_URL environment variable is not set");
-    }
+    const apiUrl = 'https://message-intelligence-peter144.replit.app/analyze_message';
 
-    // Ensure we have a clean URL by removing any trailing slashes
-    const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-    const finalUrl = `${baseUrl}/analyze_message`;
-
-    console.log('Message Analysis API Configuration:', {
-      baseUrl,
-      finalUrl,
+    console.log('Message Analysis API Request:', {
+      url: apiUrl,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      body: JSON.stringify(requestBody, null, 2)
     });
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
-    const response = await fetch(finalUrl, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -79,11 +89,14 @@ export async function calculateConnectionScore(
     const analysis: MessageAnalysisResponse = await response.json();
     console.log('Received analysis:', JSON.stringify(analysis, null, 2));
 
-    // Convert connection score from 0-1 to 0-10 for frontend compatibility
-    const score = Math.round(analysis.connectionScore * 10);
+    // Connection score is already in 0-10 range from the new API
+    const score = analysis.connectionScore;
 
-    // Join suggestions into a single feedback string
-    const feedback = analysis.messageFeedback.suggestion.join(' ');
+    // Combine suggestions and strengths into meaningful feedback
+    const feedback = [
+      ...analysis.messageFeedback.strength.map(s => `Strength: ${s}`),
+      ...analysis.messageFeedback.suggestion.map(s => `Suggestion: ${s}`)
+    ].join('\n');
 
     return {
       score,
