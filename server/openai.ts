@@ -90,8 +90,8 @@ Return your response as a JSON object.`
           const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
 
           const feedbackMatch = failedGen.match(/"feedback":\s*"([^"]+)/);
-          let feedback = feedbackMatch ? 
-            feedbackMatch[1] + '..."' : 
+          let feedback = feedbackMatch ?
+            feedbackMatch[1] + '..."' :
             "I'm unable to analyze this message right now. Please try again.";
 
           feedback = truncateToTwoSentences(feedback);
@@ -107,7 +107,7 @@ Return your response as a JSON object.`
     }
 
     return {
-      score: typeof analysis.score === 'number' ? analysis.score : 
+      score: typeof analysis.score === 'number' ? analysis.score :
              typeof analysis.connectionScore === 'number' ? analysis.connectionScore : 5,
       feedback: truncateToTwoSentences(analysis.feedback) || "I'm unable to analyze this message right now. Please try again."
     };
