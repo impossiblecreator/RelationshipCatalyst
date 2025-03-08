@@ -41,7 +41,7 @@ export default function ChatPage() {
         isAiCompanion: true
       });
       const data = await response.json();
-      return data;
+      return data.data;
     },
     onSuccess: (newConversation) => {
       setConversation(newConversation);
@@ -61,7 +61,8 @@ export default function ChatPage() {
 
   const { data: existingMessages, isLoading: isLoadingMessages } = useQuery<Message[]>({
     queryKey: [`/api/conversations/${conversation?.id}/messages`],
-    enabled: !!conversation?.id
+    enabled: !!conversation?.id,
+    select: (data) => data.data
   });
 
   useEffect(() => {
@@ -110,10 +111,10 @@ export default function ChatPage() {
     try {
       const response = await apiRequest("POST", "/api/analyze", {
         message: content,
-        conversationId: conversation?.id // Add conversation ID to the request
+        conversationId: conversation?.id
       });
       const data = await response.json();
-      setMessageFeedback(data);
+      setMessageFeedback(data.data);
     } catch (error) {
       console.error("Error analyzing message:", error);
       setMessageFeedback({
@@ -149,7 +150,7 @@ export default function ChatPage() {
     if (!conversation || !draftMessage.trim() || !webSocketRef.current) return;
 
     const trimmedMessage = draftMessage.trim();
-    if (trimmedMessage === '') return; // Prevent empty messages
+    if (trimmedMessage === '') return;
 
     setIsSending(true);
     const optimisticMessage = {
