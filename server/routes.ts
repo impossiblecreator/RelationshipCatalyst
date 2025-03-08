@@ -72,9 +72,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
    */
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { message, conversationId } = req.body;
+      const { message, conversationId, age, sex } = req.body;
       if (!message || typeof message !== 'string') {
         return handleError(res, new Error("Message is required"), 400);
+      }
+      if (!age || typeof age !== 'number' || age <= 0) {
+        return handleError(res, new Error("Valid age > 0 is required"), 400);
+      }
+      if (!sex || !['male', 'female', 'non-binary'].includes(sex)) {
+        return handleError(res, new Error("Sex must be 'male', 'female', or 'non-binary'"), 400);
       }
 
       let conversationHistory: Message[] = [];
@@ -83,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversationHistory = conversationHistory.slice(-20);
       }
 
-      const analysis = await calculateConnectionScore(message, conversationHistory);
+      const analysis = await calculateConnectionScore(message, conversationHistory, age, sex);
       res.json({ success: true, data: analysis });
     } catch (error) {
       handleError(res, error);

@@ -19,6 +19,8 @@ export default function ChatPage() {
     score: 0,
     feedback: ""
   })
+  const [age, setAge] = useState(16) // Default age
+  const [sex, setSex] = useState<'male' | 'female' | 'non-binary'>('non-binary') // Default sex
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -111,7 +113,9 @@ export default function ChatPage() {
     try {
       const response = await apiRequest("POST", "/api/analyze", {
         message: content,
-        conversationId: conversation?.id
+        conversationId: conversation?.id,
+        age,
+        sex
       });
       const data = await response.json();
       setMessageFeedback(data.data);
@@ -195,14 +199,32 @@ export default function ChatPage() {
             <p className="text-xs text-gray-500">Online</p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowFeedback(!showFeedback)}
-          className="flex items-center gap-1"
-        >
-          Feedback {showFeedback ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </Button>
+        <div className="flex items-center gap-4">
+          <select 
+            className="rounded border p-1 text-sm"
+            value={sex}
+            onChange={(e) => setSex(e.target.value as 'male' | 'female' | 'non-binary')}
+          >
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="non-binary">Non-binary</option>
+          </select>
+          <input
+            type="number"
+            min="1"
+            className="rounded border p-1 w-16 text-sm"
+            value={age}
+            onChange={(e) => setAge(Math.max(1, parseInt(e.target.value) || 1))}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowFeedback(!showFeedback)}
+            className="flex items-center gap-1"
+          >
+            Feedback {showFeedback ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
