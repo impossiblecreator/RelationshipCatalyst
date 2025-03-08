@@ -12,7 +12,7 @@ export async function calculateConnectionScore(
   currentMessage: string,
   conversationHistory: Message[] = [],
   age: number,
-  sex: 'male' | 'female' | 'non-binary'
+  gender: string
 ): Promise<{
   score: number;
   feedback: string;
@@ -29,13 +29,16 @@ export async function calculateConnectionScore(
         content: msg.content
       })),
       user_attributes: {
-        gender: sex,
-        age: age,
+        gender,
+        age,
         relationship_context: "general" // Default context
       }
     };
 
     const apiUrl = process.env.MESSAGE_ANALYSIS_API_URL || 'http://localhost:8000';
+    console.log('Sending request to Message Analysis API:', apiUrl);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch(`${apiUrl}/analyze_message`, {
       method: 'POST',
       headers: {
@@ -45,10 +48,16 @@ export async function calculateConnectionScore(
     });
 
     if (!response.ok) {
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: await response.text()
+      });
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
 
     const analysis: MessageAnalysisResponse = await response.json();
+    console.log('Received analysis:', JSON.stringify(analysis, null, 2));
 
     // Convert connection score from 0-1 to 0-10 for frontend compatibility
     const score = Math.round(analysis.connectionScore * 10);

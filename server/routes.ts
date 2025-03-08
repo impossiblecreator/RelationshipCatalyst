@@ -35,10 +35,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(status).json(response);
   };
 
-  /**
-   * @api {post} /api/conversations Create a new conversation
-   * @apiDescription Creates a new conversation thread
-   */
   app.post("/api/conversations", async (req, res) => {
     try {
       const conversation = insertConversationSchema.parse(req.body);
@@ -49,10 +45,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  /**
-   * @api {get} /api/conversations/:id/messages Get conversation messages
-   * @apiDescription Retrieves messages for a specific conversation
-   */
   app.get("/api/conversations/:id/messages", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -66,13 +58,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  /**
-   * @api {post} /api/analyze Analyze message content
-   * @apiDescription Analyzes message content for emotional intelligence feedback
-   */
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { message, conversationId, age, sex } = req.body;
+      const { message, conversationId, age, gender } = req.body;
 
       // Validate request parameters
       if (!message || typeof message !== 'string') {
@@ -81,8 +69,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!age || typeof age !== 'number' || age < 1) {
         return handleError(res, new Error("Valid age greater than 0 is required"), 400);
       }
-      if (!sex || !['male', 'female', 'non-binary'].includes(sex)) {
-        return handleError(res, new Error("Sex must be 'male', 'female', or 'non-binary'"), 400);
+      if (!gender || !['male', 'female', 'non-binary'].includes(gender)) {
+        return handleError(res, new Error("Gender must be 'male', 'female', or 'non-binary'"), 400);
       }
 
       // Get conversation history if conversationId is provided
@@ -93,18 +81,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversationHistory = conversationHistory.slice(-20);
       }
 
+
       // Get analysis from the Message Analysis API
-      const analysis = await calculateConnectionScore(message, conversationHistory, age, sex);
+      const analysis = await calculateConnectionScore(message, conversationHistory, age, gender);
       res.json({ success: true, data: analysis });
     } catch (error) {
       handleError(res, error);
     }
   });
 
-  /**
-   * @api {post} /api/messages Create a new message
-   * @apiDescription Creates a new message in a conversation
-   */
   app.post("/api/messages", async (req, res) => {
     try {
       const { content, conversationId } = req.body;
