@@ -22,11 +22,13 @@ export async function calculateConnectionScore(
     const requestBody = {
       draft: {
         role: "user",
-        content: currentMessage
+        content: currentMessage,
+        created_at: null
       },
       message_history: conversationHistory.map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
+        created_at: null
       })),
       user_attributes: {
         gender,
