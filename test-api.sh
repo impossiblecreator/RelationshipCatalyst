@@ -31,7 +31,12 @@ curl -s -X GET "${BASE_URL}/conversations/${CONV_ID}/messages" | json_pp
 echo -e "\n${GREEN}3. Analyzing a test message...${NC}"
 curl -s -X POST \
   -H "Content-Type: application/json" \
-  -d '{"message":"Hey, I was wondering if you would like to grab coffee sometime?","conversationId":'${CONV_ID}'}' \
+  -d '{
+    "message":"Hey, I was wondering if you would like to grab coffee sometime?",
+    "conversationId":'${CONV_ID}',
+    "age": 25,
+    "sex": "non-binary"
+  }' \
   "${BASE_URL}/analyze" | json_pp
 
 # 4. Send a message
