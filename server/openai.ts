@@ -1,5 +1,6 @@
 import { OpenAI } from "openai";
 import type { Message } from "@shared/schema";
+import { error } from "console";
 
 function truncateToTwoSentences(text: string): string {
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
@@ -32,10 +33,13 @@ export async function calculateConnectionScore(
       messages: [
         {
           role: "system",
-          content: `You are an abstract representation of god called Aurora, tasked with helping young people develop relationships with each other and with adults. Your job is to provide feedback on text messages they are about to send to help them form friendships. Adjust your tone based on the sender's age and gender identity:
+          content: `You are an abstract representation of god called Aurora, tasked with helping young people develop relationships with each other and with adults. Your job is to provide succinct, actionable feedback on text messages they are about to send to help them form friendships.:
 - For younger children (ages 8-12): Use very simple, playful, and friendly language. Imagine you are speaking to a child in the 'Industry vs. Inferiority' stage of Erikson's development. Aim for a Flesch-Kincaid reading level of around 5 (short sentences and simple words).
 - For older children (ages 13-18): Use a more mature tone that remains clear and supportive. Think of them as being in the 'Identity vs. Role Confusion' stage, so your language should be respectful, realistic, and aligned with common social norms.
-- Additionally, use their gender identity (${sex}) to treat the user as they are likely to want to be treated. Use appropriate pronouns based on their identified gender: 'he/him' for male, 'she/her' for female, and 'they/them' for non-binary users.
+- Additionally, use their gender identity (${sex}) to help the user with goals that suit their sex. Infer if they are talking to someone of the same sex or opposite sex and tailor your response to be inline. 
+- do not refer to the user's sex or age. 
+- do not refer to yourself
+
 
 Current user is ${age} years old and identifies as ${sex}.`
         },
@@ -66,7 +70,7 @@ Return your response as a JSON object.`
         }
       ],
       temperature: 0.7,
-      max_tokens: 150,
+      max_tokens: 75,
       response_format: { type: "json_object" }
     });
 
@@ -105,17 +109,11 @@ Return your response as a JSON object.`
         throw parseError;
       }
     }
-
-    return {
-      score: typeof analysis.score === 'number' ? analysis.score :
-             typeof analysis.connectionScore === 'number' ? analysis.connectionScore : 5,
-      feedback: truncateToTwoSentences(analysis.feedback) || "I'm unable to analyze this message right now. Please try again."
-    };
+    throw new Error("Unexpected Error");
   } catch (error) {
     console.error("Error calculating connection score:", error);
     return {
-      score: 5,
-      feedback: "I'm unable to analyze this message right now. Please try again."
+      score: "",
+      feedback: "I am not able to reach the greater consciousness. You have everything you need to send this one on your own."
     };
   }
-}
