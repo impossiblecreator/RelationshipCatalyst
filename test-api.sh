@@ -35,7 +35,7 @@ curl -s -X POST \
     "message":"Hey, I was wondering if you would like to grab coffee sometime?",
     "conversationId":'${CONV_ID}',
     "age": 25,
-    "sex": "non-binary"
+    "gender": "non-binary"
   }' \
   "${BASE_URL}/analyze" | json_pp
 

@@ -20,7 +20,7 @@ export default function ChatPage() {
     feedback: ""
   })
   const [age, setAge] = useState(16) // Default age
-  const [sex, setSex] = useState<'male' | 'female' | 'non-binary'>('non-binary') // Default sex
+  const [gender, setGender] = useState<'male' | 'female' | 'non-binary'>('non-binary') // Default gender
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -115,7 +115,7 @@ export default function ChatPage() {
         message: content,
         conversationId: conversation?.id,
         age,
-        sex
+        gender
       });
       const data = await response.json();
       setMessageFeedback(data.data);
@@ -202,8 +202,8 @@ export default function ChatPage() {
         <div className="flex items-center gap-4">
           <select 
             className="rounded border p-1 text-sm"
-            value={sex}
-            onChange={(e) => setSex(e.target.value as 'male' | 'female' | 'non-binary')}
+            value={gender}
+            onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'non-binary')}
           >
             <option value="male">Male</option>
             <option value="female">Female</option>
