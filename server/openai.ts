@@ -35,12 +35,27 @@ export async function calculateConnectionScore(
       }
     };
 
-    const apiUrl = process.env.MESSAGE_ANALYSIS_API_URL || 'http://localhost:8000';
-    console.log('Sending request to Message Analysis API:', apiUrl);
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
-    console.log('Request method: POST');
+    const apiUrl = process.env.MESSAGE_ANALYSIS_API_URL;
+    if (!apiUrl) {
+      throw new Error("MESSAGE_ANALYSIS_API_URL environment variable is not set");
+    }
 
-    const response = await fetch(`${apiUrl}/analyze_message`, {
+    // Ensure we have a clean URL by removing any trailing slashes
+    const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+    const finalUrl = `${baseUrl}/analyze_message`;
+
+    console.log('Message Analysis API Configuration:', {
+      baseUrl,
+      finalUrl,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(finalUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
