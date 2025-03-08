@@ -38,11 +38,13 @@ export async function calculateConnectionScore(
     const apiUrl = process.env.MESSAGE_ANALYSIS_API_URL || 'http://localhost:8000';
     console.log('Sending request to Message Analysis API:', apiUrl);
     console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('Request method: POST');
 
     const response = await fetch(`${apiUrl}/analyze_message`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(requestBody)
     });
@@ -51,6 +53,7 @@ export async function calculateConnectionScore(
       console.error('API Error Response:', {
         status: response.status,
         statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
         body: await response.text()
       });
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
