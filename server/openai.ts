@@ -23,6 +23,7 @@ interface MessageAnalysisRequest {
     gender: string;
     age: number;
     relationship_context: string;
+    relationship_type: string;
   };
 }
 
@@ -30,7 +31,8 @@ export async function calculateConnectionScore(
   currentMessage: string,
   conversationHistory: Message[] = [],
   age: number,
-  gender: string
+  gender: string,
+  relationshipType: string
 ): Promise<{
   score: number;
   feedback: string;
@@ -51,7 +53,8 @@ export async function calculateConnectionScore(
       user_attributes: {
         gender,
         age,
-        relationship_context: "general" // Default context
+        relationship_context: "general", // Default context
+        relationship_type: relationshipType
       }
     };
 

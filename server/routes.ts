@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { message, conversationId, age, gender } = req.body;
+      const { message, conversationId, age, gender, relationshipType } = req.body;
 
       // Validate request parameters
       if (!message || typeof message !== 'string') {
@@ -71,6 +71,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (!gender || !['male', 'female', 'non-binary'].includes(gender)) {
         return handleError(res, new Error("Gender must be 'male', 'female', or 'non-binary'"), 400);
+      }
+      if (!relationshipType || !['friend', 'family', 'crush'].includes(relationshipType)) {
+        return handleError(res, new Error("Relationship type must be 'friend', 'family', or 'crush'"), 400);
       }
 
       // Get conversation history if conversationId is provided
@@ -83,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
       // Get analysis from the Message Analysis API
-      const analysis = await calculateConnectionScore(message, conversationHistory, age, gender);
+      const analysis = await calculateConnectionScore(message, conversationHistory, age, gender, relationshipType);
       res.json({ success: true, data: analysis });
     } catch (error) {
       handleError(res, error);

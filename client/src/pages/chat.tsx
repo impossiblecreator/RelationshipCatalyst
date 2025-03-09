@@ -21,6 +21,7 @@ export default function ChatPage() {
   })
   const [age, setAge] = useState(16) // Default age
   const [gender, setGender] = useState<'male' | 'female' | 'non-binary'>('non-binary') // Default gender
+  const [relationshipType, setRelationshipType] = useState<'friend' | 'family' | 'crush'>('friend') // Default relationship type
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -115,7 +116,8 @@ export default function ChatPage() {
         message: content,
         conversationId: conversation?.id,
         age,
-        gender
+        gender,
+        relationshipType
       });
       const data = await response.json();
       setMessageFeedback(data.data);
@@ -216,6 +218,15 @@ export default function ChatPage() {
             value={age}
             onChange={(e) => setAge(Math.max(1, parseInt(e.target.value) || 1))}
           />
+          <select 
+            className="rounded border p-1 text-sm"
+            value={relationshipType}
+            onChange={(e) => setRelationshipType(e.target.value as 'friend' | 'family' | 'crush')}
+          >
+            <option value="friend">Friend</option>
+            <option value="family">Family</option>
+            <option value="crush">Crush</option>
+          </select>
           <Button
             variant="ghost"
             size="sm"
